@@ -3,6 +3,8 @@ package ir.sharif.aic.hideandseek.ai;
 import ir.sharif.aic.hideandseek.client.Phone;
 import ir.sharif.aic.hideandseek.protobuf.AIProto.GameView;
 
+import java.util.Random;
+
 public class ThiefAI extends AI {
 
     public ThiefAI(Phone phone) {
@@ -14,7 +16,9 @@ public class ThiefAI extends AI {
      */
     @Override
     public int getStartingNode(GameView gameView) {
-        return 2;
+        Random random = new Random();
+
+        return  random.nextInt(gameView.getConfig().getGraph().getNodesCount()) + 1;
     }
 
     /**
