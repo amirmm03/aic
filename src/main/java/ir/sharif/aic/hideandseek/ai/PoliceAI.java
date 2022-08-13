@@ -4,6 +4,7 @@ import ir.sharif.aic.hideandseek.client.Phone;
 import ir.sharif.aic.hideandseek.protobuf.AIProto.GameView;
 
 public class PoliceAI extends AI {
+    PoliceGraphController policeGraphController;
 
     public PoliceAI(Phone phone) {
         this.phone = phone;
@@ -14,6 +15,7 @@ public class PoliceAI extends AI {
      */
     @Override
     public int getStartingNode(GameView gameView) {
+        policeGraphController = new PoliceGraphController(gameView.getConfig().getGraph());
         return 1;
     }
 
