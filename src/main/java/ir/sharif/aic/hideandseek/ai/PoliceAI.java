@@ -13,7 +13,7 @@ public class PoliceAI extends AI {
     private PoliceGraphController policeGraphController;
     private ArrayList<AIProto.Agent> thiefs = new ArrayList<>();
     private boolean hasReachedATheif = false;
-    private Random random = new Random();
+    private Random random;
 
     public PoliceAI(Phone phone) {
         this.phone = phone;
@@ -24,6 +24,7 @@ public class PoliceAI extends AI {
      */
     @Override
     public int getStartingNode(GameView gameView) {
+        random = new Random(gameView.getViewer().getId() * 100L + System.currentTimeMillis());
         policeGraphController = new PoliceGraphController(gameView.getConfig().getGraph());
         return 1;
     }
@@ -52,8 +53,8 @@ public class PoliceAI extends AI {
         }
 
         int nextNode = policeGraphController.getNextOnPath(me.getNodeId(), closestThief.getNodeId());
-        if (nextNode == closestThief.getNodeId()){
-            thiefs.remove(closestThief);
+        if (nextNode == closestThief.getNodeId()) {
+            //thiefs.remove(closestThief);
             hasReachedATheif = true;
         }
         return nextNode;
