@@ -5,7 +5,7 @@ import ir.sharif.aic.hideandseek.protobuf.AIProto;
 import java.util.ArrayList;
 
 public class GraphController {
-    private ArrayList<AIProto.Path>[] adjacent;
+    protected ArrayList<AIProto.Path>[] adjacent;
     private AIProto.Graph graph;
     private int[][] distances;
     private int[][] nextNodeToMove;
@@ -46,7 +46,7 @@ public class GraphController {
             int v = path.getFirstNodeId();
             int u = path.getSecondNodeId();
             //TODO change constant
-            distances[v][u] = distances[u][v] = 1 + (int) (path.getPrice()/25);
+            distances[v][u] = distances[u][v] = 1 + (int) (path.getPrice()/2);
             nextNodeToMove[v][u] = u;
             nextNodeToMove[u][v] = v;
         }

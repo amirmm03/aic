@@ -26,7 +26,7 @@ public class ThiefAI extends AI {
      */
     @Override
     public int move(GameView gameView) {
-        return 2;
+        return gameView.getViewer().getNodeId();
     }
 
 }

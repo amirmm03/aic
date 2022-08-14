@@ -5,15 +5,11 @@ import ir.sharif.aic.hideandseek.protobuf.AIProto;
 import ir.sharif.aic.hideandseek.protobuf.AIProto.GameView;
 import ir.sharif.aic.hideandseek.protobuf.AIProto.Agent;
 
-import javax.swing.text.StyledEditorKit;
-import java.util.ArrayList;
-import java.util.Random;
+import java.util.HashMap;
 
 public class PoliceAI extends AI {
     private PoliceGraphController policeGraphController;
-    private ArrayList<AIProto.Agent> thiefs = new ArrayList<>();
-    private boolean hasReachedATheif = false;
-    private Random random;
+    private HashMap<Agent, Boolean> thievesCaptured = new HashMap<>();
 
     public PoliceAI(Phone phone) {
         this.phone = phone;
@@ -24,8 +20,7 @@ public class PoliceAI extends AI {
      */
     @Override
     public int getStartingNode(GameView gameView) {
-        random = new Random(gameView.getViewer().getId() * 100L + System.currentTimeMillis());
-        policeGraphController = new PoliceGraphController(gameView.getConfig().getGraph());
+        policeGraphController = new PoliceGraphController(gameView.getConfig().getGraph(),gameView.getViewer().getId());
         return 1;
     }
 
@@ -36,37 +31,41 @@ public class PoliceAI extends AI {
     public int move(GameView gameView) {
         if (gameView.getConfig().getTurnSettings().getVisibleTurnsList().contains(gameView.getTurn().getTurnNumber())) {
             updateThief(gameView);
-            hasReachedATheif = false;
         }
-        if (hasReachedATheif) {
-            //random move
-        }
-        if (thiefs.isEmpty()) {
-            //distribute
-        }
-        Agent me = gameView.getViewer();
-        Agent closestThief = null;
-        for (Agent thief : thiefs) {
-            if (closestThief == null || policeGraphController.getDistance(me.getNodeId(), thief.getNodeId()) <
-                    policeGraphController.getDistance(me.getNodeId(), closestThief.getNodeId()))
-                closestThief = thief;
+        if (thievesCaptured.isEmpty() || allThievesCaptured()) {
+            // TODO: 8/14/2022 distribute
+            return policeGraphController.randomMove(gameView.getViewer().getNodeId());
         }
 
+        Agent me = gameView.getViewer();
+        Agent closestThief = policeGraphController.findClosestThief(gameView,thievesCaptured);
+
+        if (thievesCaptured.get(closestThief)) {
+            return policeGraphController.randomMove(me.getNodeId());
+        }
         int nextNode = policeGraphController.getNextOnPath(me.getNodeId(), closestThief.getNodeId());
+
         if (nextNode == closestThief.getNodeId()) {
-            //thiefs.remove(closestThief);
-            hasReachedATheif = true;
+            thievesCaptured.put(closestThief,true);
         }
         return nextNode;
 
     }
 
+    private boolean allThievesCaptured() {
+        for (Agent agent : thievesCaptured.keySet()) {
+            if (!thievesCaptured.get(agent))
+                return false;
+        }
+        return true;
+    }
+
     private void updateThief(GameView gameView) {
         Agent me = gameView.getViewer();
-        thiefs = new ArrayList<>();
+        thievesCaptured = new HashMap<>();
         for (Agent agent : gameView.getVisibleAgentsList()) {
             if (agent.getTeamValue() != me.getTeamValue() && agent.getType() == AIProto.AgentType.THIEF && !agent.getIsDead()) {
-                thiefs.add(agent);
+                thievesCaptured.put(agent,false);
             }
         }
     }
