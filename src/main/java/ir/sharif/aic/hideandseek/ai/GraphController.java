@@ -7,7 +7,7 @@ import java.util.ArrayList;
 public class GraphController {
     protected ArrayList<AIProto.Path>[] adjacent;
     private AIProto.Graph graph;
-    private int[][] distances;
+    protected int[][] distances;
     private int[][] nextNodeToMove;
 
     public GraphController(AIProto.Graph graph) {

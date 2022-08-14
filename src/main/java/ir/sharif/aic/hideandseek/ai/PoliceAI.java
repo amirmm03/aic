@@ -20,7 +20,7 @@ public class PoliceAI extends AI {
      */
     @Override
     public int getStartingNode(GameView gameView) {
-        policeGraphController = new PoliceGraphController(gameView.getConfig().getGraph(),gameView.getViewer().getId());
+        policeGraphController = new PoliceGraphController(gameView);
         return 1;
     }
 
@@ -32,9 +32,10 @@ public class PoliceAI extends AI {
         if (gameView.getConfig().getTurnSettings().getVisibleTurnsList().contains(gameView.getTurn().getTurnNumber())) {
             updateThief(gameView);
         }
+
+
         if (thievesCaptured.isEmpty() || allThievesCaptured()) {
-            // TODO: 8/14/2022 distribute
-            return policeGraphController.randomMove(gameView.getViewer().getNodeId());
+            return policeGraphController.distributedMove(gameView,phone);
         }
 
         Agent me = gameView.getViewer();
