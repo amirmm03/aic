@@ -3,6 +3,7 @@ package ir.sharif.aic.hideandseek.ai;
 import ir.sharif.aic.hideandseek.protobuf.AIProto;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class GraphController {
     protected ArrayList<AIProto.Path>[] adjacent;
@@ -67,4 +68,16 @@ public class GraphController {
     public int getDistance(int from, int to) {
         return distances[from][to];
     }
+
+    public double getScore(int nodeId, List<Integer> policeList) {
+        int closest = 1000000;
+        for (int police : policeList)
+            closest = Math.min(closest, getDistance(nodeId, police));
+        return closest;
+    }
+
+    public ArrayList<AIProto.Path> getAdjacent(int v) {
+        return adjacent[v];
+    }
+
 }
