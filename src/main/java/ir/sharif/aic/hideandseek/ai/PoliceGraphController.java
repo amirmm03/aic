@@ -1,12 +1,12 @@
 package ir.sharif.aic.hideandseek.ai;
 
-import ir.sharif.aic.hideandseek.client.Phone;
 import ir.sharif.aic.hideandseek.protobuf.AIProto;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Random;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.net.Socket;
+import java.util.*;
 
 import static java.lang.Math.min;
 
@@ -16,26 +16,39 @@ public class PoliceGraphController extends GraphController {
 
     private final ArrayList<Integer> distributedNodes = new ArrayList<>();
     private final ArrayList<Integer> policeIds = new ArrayList<>();
-
+    FileWriter fileWriter;
     public PoliceGraphController(AIProto.GameView gameView) {
         super(gameView.getConfig().getGraph());
+//        File file = new File(gameView.getViewer().getId() + ".txt");
+//        try {
+//            fileWriter = new FileWriter(file);
+//        } catch (IOException e) {
+//            System.exit(0);
+//        }
         random = new Random(gameView.getViewer().getId() * 1793L + System.currentTimeMillis() * 7);
-        fillDistributedNodes(gameView.getVisibleAgentsList());
+
+        fillDistributedNodes(gameView);
+
     }
 
-    private void fillDistributedNodes(List<AIProto.Agent> visibleAgentsList) {
-        for (AIProto.Agent agent : visibleAgentsList) {
-            if (agent.getTeamValue() == AIProto.Team.FIRST_VALUE && agent.getType() == AIProto.AgentType.POLICE) {
-                policeIds.add(agent.getId());
-            }
-        }
-        distributedNodes.add(1);
+    private void fillDistributedNodes(AIProto.GameView gameView) {
+        fillPoliceIds(gameView);
 
+        distributedNodes.add(1);
         for (int i = 0; i < policeIds.size(); i++) {
             addNextNodeToDistributedList();
         }
-
         distributedNodes.remove(0);
+    }
+
+    private void fillPoliceIds(AIProto.GameView gameView) {
+        policeIds.add(gameView.getViewer().getId());
+        for (AIProto.Agent agent : gameView.getVisibleAgentsList()) {
+            if (agent.getTeamValue() == gameView.getViewer().getTeamValue() && agent.getType() == AIProto.AgentType.POLICE) {
+                policeIds.add(agent.getId());
+            }
+        }
+        Collections.sort(policeIds);
     }
 
     private void addNextNodeToDistributedList() {
@@ -46,7 +59,7 @@ public class PoliceGraphController extends GraphController {
                 continue;
             int minimumDistance = 100000;
             for (int j = 0; j < distributedNodes.size(); j++) {
-                minimumDistance = min(minimumDistance, distances[i][j]);
+                minimumDistance = min(minimumDistance, distances[i][distributedNodes.get(j)]);
             }
             if (minimumDistance > bestNodeMinimumDistance) {
                 bestNodeMinimumDistance = minimumDistance;
@@ -78,31 +91,26 @@ public class PoliceGraphController extends GraphController {
             return path.getFirstNodeId();
     }
 
-    public int distributedMove(AIProto.GameView gameView, Phone phone) {
+    public int distributedMove(AIProto.GameView gameView) {
+
         AIProto.Agent me = gameView.getViewer();
+
         ArrayList<Integer> copy = (ArrayList<Integer>) distributedNodes.clone();
 
-        for (AIProto.Agent agent : gameView.getVisibleAgentsList()) {
-            if (agent.getTeamValue() == me.getTeamValue() && agent.getType() == AIProto.AgentType.POLICE) {
+        ArrayList<AIProto.Agent> agents = new ArrayList<>(gameView.getVisibleAgentsList());
+        agents.add(me);
 
-                int closestNode = findClosestNode(agent.getNodeId(), copy);
-                copy.remove((Object) closestNode);
-                if (agent.getId() == me.getId()) {
-                    return getNextOnPath(me.getNodeId(), closestNode);
+        for (Integer policeId : policeIds) {
+            for (AIProto.Agent agent : agents) {
+                if (policeId == agent.getId()) {
+                    int closestNode = findClosestNode(agent.getNodeId(), copy);
+                    copy.remove((Object) closestNode);
+                    if (agent.getId() == me.getId()) {
+                        return getNextOnPath(me.getNodeId(), closestNode);
+                    }
                 }
             }
         }
-        // TODO: 8/15/2022 bug here 
-        for (AIProto.Agent agent : gameView.getVisibleAgentsList()) {
-            if (agent.getId() == me.getId())
-                phone.sendMessage("11111");
-        }
-        phone.sendMessage("00000");
-//        while (true) {
-//            System.out.println("\n");
-//            if (false)
-//                break;
-//        }
         return randomMove(me.getNodeId());
     }
 

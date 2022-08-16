@@ -34,7 +34,7 @@ public class GraphController {
         nextNodeToMove = new int[nodesCount + 1][nodesCount + 1];
         for (int i = 1; i <= nodesCount; i++) {
             for (int j = 1; j <= nodesCount; j++) {
-                distances[i][j] = 100000;
+                distances[i][j] = 1000000;
             }
         }
 

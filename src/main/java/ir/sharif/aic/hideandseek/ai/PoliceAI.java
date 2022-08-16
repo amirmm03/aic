@@ -5,11 +5,13 @@ import ir.sharif.aic.hideandseek.protobuf.AIProto;
 import ir.sharif.aic.hideandseek.protobuf.AIProto.GameView;
 import ir.sharif.aic.hideandseek.protobuf.AIProto.Agent;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 
 public class PoliceAI extends AI {
     private PoliceGraphController policeGraphController;
     private HashMap<Agent, Boolean> thievesCaptured = new HashMap<>();
+    ArrayList<Agent> OtherPolices = new ArrayList<>();
 
     public PoliceAI(Phone phone) {
         this.phone = phone;
@@ -29,17 +31,20 @@ public class PoliceAI extends AI {
      */
     @Override
     public int move(GameView gameView) {
-        if (gameView.getConfig().getTurnSettings().getVisibleTurnsList().contains(gameView.getTurn().getTurnNumber())) {
-            updateThief(gameView);
-        }
-
+        updateThief(gameView);
 
         if (thievesCaptured.isEmpty() || allThievesCaptured()) {
-            return policeGraphController.distributedMove(gameView,phone);
+            return policeGraphController.distributedMove(gameView);
         }
 
+
         Agent me = gameView.getViewer();
-        Agent closestThief = policeGraphController.findClosestThief(gameView,thievesCaptured);
+        if (havePoliceHereWithHigherId(me)){
+            return policeGraphController.randomMove(me.getNodeId());
+        }
+
+
+        Agent closestThief = policeGraphController.findClosestThief(gameView, thievesCaptured);
 
         if (thievesCaptured.get(closestThief)) {
             return policeGraphController.randomMove(me.getNodeId());
@@ -47,10 +52,18 @@ public class PoliceAI extends AI {
         int nextNode = policeGraphController.getNextOnPath(me.getNodeId(), closestThief.getNodeId());
 
         if (nextNode == closestThief.getNodeId()) {
-            thievesCaptured.put(closestThief,true);
+            thievesCaptured.put(closestThief, true);
         }
         return nextNode;
 
+    }
+
+    private boolean havePoliceHereWithHigherId(Agent me) {
+        for (Agent otherPolice : OtherPolices) {
+            if (otherPolice.getNodeId()==me.getNodeId() && otherPolice.getId()>me.getId())
+                return true;
+        }
+        return false;
     }
 
     private boolean allThievesCaptured() {
@@ -63,10 +76,22 @@ public class PoliceAI extends AI {
 
     private void updateThief(GameView gameView) {
         Agent me = gameView.getViewer();
-        thievesCaptured = new HashMap<>();
-        for (Agent agent : gameView.getVisibleAgentsList()) {
-            if (agent.getTeamValue() != me.getTeamValue() && agent.getType() == AIProto.AgentType.THIEF && !agent.getIsDead()) {
-                thievesCaptured.put(agent,false);
+        if (gameView.getConfig().getTurnSettings().getVisibleTurnsList().contains(gameView.getTurn().getTurnNumber())) {
+            thievesCaptured = new HashMap<>();
+            for (Agent agent : gameView.getVisibleAgentsList()) {
+                if (agent.getTeamValue() != me.getTeamValue() && agent.getType() == AIProto.AgentType.THIEF && !agent.getIsDead()) {
+                    thievesCaptured.put(agent, false);
+                }
+            }
+        }
+        OtherPolices.clear();
+        for (Agent myPolice : gameView.getVisibleAgentsList()) {
+            if (myPolice.getTeam()==me.getTeam() && myPolice.getType()== AIProto.AgentType.POLICE) {
+                OtherPolices.add(myPolice);
+                for (Agent thief : thievesCaptured.keySet()) {
+                    if (thief.getNodeId() == myPolice.getNodeId())
+                        thievesCaptured.put(thief, true);
+                }
             }
         }
     }
