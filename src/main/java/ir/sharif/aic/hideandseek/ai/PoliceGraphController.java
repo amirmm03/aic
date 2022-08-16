@@ -2,10 +2,7 @@ package ir.sharif.aic.hideandseek.ai;
 
 import ir.sharif.aic.hideandseek.protobuf.AIProto;
 
-import java.io.File;
 import java.io.FileWriter;
-import java.io.IOException;
-import java.net.Socket;
 import java.util.*;
 
 import static java.lang.Math.min;
@@ -17,6 +14,7 @@ public class PoliceGraphController extends GraphController {
     private final ArrayList<Integer> distributedNodes = new ArrayList<>();
     private final ArrayList<Integer> policeIds = new ArrayList<>();
     FileWriter fileWriter;
+
     public PoliceGraphController(AIProto.GameView gameView) {
         super(gameView.getConfig().getGraph());
 //        File file = new File(gameView.getViewer().getId() + ".txt");
@@ -36,7 +34,7 @@ public class PoliceGraphController extends GraphController {
 
         distributedNodes.add(1);
         for (int i = 0; i < policeIds.size(); i++) {
-            addNextNodeToDistributedList();
+            addNextNodeToDistributedList(gameView.getConfig().getGraph().getNodesCount());
         }
         distributedNodes.remove(0);
     }
@@ -51,15 +49,15 @@ public class PoliceGraphController extends GraphController {
         Collections.sort(policeIds);
     }
 
-    private void addNextNodeToDistributedList() {
+    private void addNextNodeToDistributedList(int nodesCount) {
         int bestNode = 1;
         int bestNodeMinimumDistance = 0;
-        for (int i = 1; i < distances.length; i++) {
+        for (int i = 1; i <= nodesCount; i++) {
             if (distributedNodes.contains(i))
                 continue;
             int minimumDistance = 100000;
             for (int j = 0; j < distributedNodes.size(); j++) {
-                minimumDistance = min(minimumDistance, distances[i][distributedNodes.get(j)]);
+                minimumDistance = min(minimumDistance, getDistance(i,distributedNodes.get(j),Double.MAX_VALUE));
             }
             if (minimumDistance > bestNodeMinimumDistance) {
                 bestNodeMinimumDistance = minimumDistance;
@@ -75,16 +73,21 @@ public class PoliceGraphController extends GraphController {
         for (AIProto.Agent thief : thievesCaptured.keySet()) {
             if (closestThief == null)
                 closestThief = thief;
-            if (getDistance(me.getNodeId(), thief.getNodeId()) < getDistance(me.getNodeId(), closestThief.getNodeId()))
+            if (getDistance(me.getNodeId(), thief.getNodeId(), gameView.getBalance()) < getDistance(me.getNodeId(), closestThief.getNodeId(), gameView.getBalance()))
                 closestThief = thief;
         }
         return closestThief;
     }
 
 
-    public int randomMove(int myLocation) {
+    public int randomMove(int myLocation , double balance) {
+        if (balance<=1)
+            return myLocation;
         int randomInt = random.nextInt(adjacent[myLocation].size());
         AIProto.Path path = adjacent[myLocation].get(randomInt);
+        if (path.getPrice()>balance){
+            return randomMove(myLocation,balance/2);
+        }
         if (path.getFirstNodeId() == myLocation)
             return path.getSecondNodeId();
         else
@@ -103,21 +106,21 @@ public class PoliceGraphController extends GraphController {
         for (Integer policeId : policeIds) {
             for (AIProto.Agent agent : agents) {
                 if (policeId == agent.getId()) {
-                    int closestNode = findClosestNode(agent.getNodeId(), copy);
+                    int closestNode = findClosestNode(agent.getNodeId(), copy, gameView.getBalance());
                     copy.remove((Object) closestNode);
                     if (agent.getId() == me.getId()) {
-                        return getNextOnPath(me.getNodeId(), closestNode);
+                        return getNextOnPath(me.getNodeId(), closestNode, gameView.getBalance());
                     }
                 }
             }
         }
-        return randomMove(me.getNodeId());
+        return randomMove(me.getNodeId(),gameView.getBalance());
     }
 
-    private int findClosestNode(int nodeId, ArrayList<Integer> nodes) {
+    private int findClosestNode(int nodeId, ArrayList<Integer> nodes, double balance) {
         int bestNode = nodes.get(0);
         for (Integer distributedNode : nodes) {
-            if (distances[distributedNode][nodeId] < distances[bestNode][nodeId])
+            if (getDistance(distributedNode, nodeId, balance) < getDistance(bestNode, nodeId, balance))
                 bestNode = distributedNode;
         }
         return bestNode;

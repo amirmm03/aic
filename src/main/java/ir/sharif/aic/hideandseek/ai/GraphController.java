@@ -1,20 +1,34 @@
 package ir.sharif.aic.hideandseek.ai;
 
+
 import ir.sharif.aic.hideandseek.protobuf.AIProto;
 
 import java.util.ArrayList;
-import java.util.List;
+import java.util.Arrays;
+import java.util.Collections;
 
 public class GraphController {
     protected ArrayList<AIProto.Path>[] adjacent;
-    private AIProto.Graph graph;
-    protected int[][] distances;
-    private int[][] nextNodeToMove;
+    private final AIProto.Graph graph;
+    ArrayList<Integer> costOfPaths = new ArrayList<>();
+    private final int[][][] distances;
+    private final int[][][] nextNodeToMove;
+    private final int[][][] priceOfMovement;
+    //                                               1     1  1     1   1   1   1 1 1
+    //                                          {40,30,25,20,15,12,10,8,7,6,5,4,3,2,1,0};
+    private final int[] weightedEdgePrices = {20, 10, 5, 2, 30, 15, 7, 3, 1, 40, 25, 12, 8, 6, 4, 0};
+    private final int numberOfTotalCalculations;
+    private int numberOfTotalCalculationsDone = 0;
 
     public GraphController(AIProto.Graph graph) {
+        numberOfTotalCalculations = weightedEdgePrices.length;
         this.graph = graph;
         fillAdjacent();
-        floydWarshall();
+        distances = new int[numberOfTotalCalculations][][];
+        nextNodeToMove = new int[numberOfTotalCalculations][][];
+        priceOfMovement = new int[numberOfTotalCalculations][][];
+        floydWarshall(numberOfTotalCalculationsDone);
+
     }
 
     private void fillAdjacent() {
@@ -25,59 +39,85 @@ public class GraphController {
         for (AIProto.Path path : graph.getPathsList()) {
             adjacent[path.getFirstNodeId()].add(path);
             adjacent[path.getSecondNodeId()].add(path);
+            if (!costOfPaths.contains((int) path.getPrice()))
+                costOfPaths.add((int) path.getPrice());
         }
+        Collections.sort(costOfPaths);
     }
 
-    public void floydWarshall() {
+    public void floydWarshall(int dimension) {
         int nodesCount = graph.getNodesCount();
-        distances = new int[nodesCount + 1][nodesCount + 1];
-        nextNodeToMove = new int[nodesCount + 1][nodesCount + 1];
+        int[][] dimensionDistances = new int[nodesCount + 1][nodesCount + 1];
+        int[][] dimensionNextNodeToMove = new int[nodesCount + 1][nodesCount + 1];
+        int[][] dimensionPriceOfMovement = new int[nodesCount + 1][nodesCount + 1];
         for (int i = 1; i <= nodesCount; i++) {
             for (int j = 1; j <= nodesCount; j++) {
-                distances[i][j] = 1000000;
+                dimensionDistances[i][j] = Integer.MAX_VALUE / 2;
             }
         }
-
         for (int i = 1; i <= nodesCount; i++) {
-            distances[i][i] = 0;
-            nextNodeToMove[i][i] = i;
-
+            dimensionDistances[i][i] = 0;
+            dimensionNextNodeToMove[i][i] = i;
+            dimensionPriceOfMovement[i][i] = 0;
         }
         for (AIProto.Path path : graph.getPathsList()) {
             int v = path.getFirstNodeId();
             int u = path.getSecondNodeId();
-            //TODO change constant
-            distances[v][u] = distances[u][v] = 1 + (int) (path.getPrice()/2);
-            nextNodeToMove[v][u] = u;
-            nextNodeToMove[u][v] = v;
+
+            dimensionDistances[v][u] = 1 + costOfPaths.indexOf((int) path.getPrice()) * weightedEdgePrices[dimension];
+            dimensionDistances[u][v] = dimensionDistances[v][u];
+
+            dimensionNextNodeToMove[v][u] = u;
+            dimensionNextNodeToMove[u][v] = v;
+
+            dimensionPriceOfMovement[v][u] = (int) path.getPrice();
+            dimensionPriceOfMovement[u][v] = (int) path.getPrice();
+
         }
         for (int k = 1; k <= nodesCount; k++)
             for (int i = 1; i <= nodesCount; i++)
                 for (int j = 1; j <= nodesCount; j++)
-                    if (distances[i][j] > distances[i][k] + distances[k][j]) {
-                        distances[i][j] = distances[i][k] + distances[k][j];
-                        nextNodeToMove[i][j] = nextNodeToMove[i][k];
+                    if (dimensionDistances[i][j] > dimensionDistances[i][k] + dimensionDistances[k][j]) {
+                        dimensionDistances[i][j] = dimensionDistances[i][k] + dimensionDistances[k][j];
+                        dimensionPriceOfMovement[i][j] = dimensionPriceOfMovement[i][k] + dimensionPriceOfMovement[k][j];
+                        dimensionNextNodeToMove[i][j] = dimensionNextNodeToMove[i][k];
                     }
 
+
+        distances[dimension] = dimensionDistances;
+        priceOfMovement[dimension] = dimensionPriceOfMovement;
+        nextNodeToMove[dimension] = dimensionNextNodeToMove;
+        numberOfTotalCalculationsDone++;
+
     }
 
-    public int getNextOnPath(int from, int to) {
-        return nextNodeToMove[from][to];
+    public void updateInfo() {
+        if (numberOfTotalCalculationsDone < numberOfTotalCalculations)
+            floydWarshall(numberOfTotalCalculationsDone);
     }
 
-    public int getDistance(int from, int to) {
-        return distances[from][to];
+    public int getNextOnPath(int from, int to, Double myMoney) {
+        int bestDimension = -1;
+        int bestDimensionDistance = Integer.MAX_VALUE;
+        for (int dimension = 0; dimension < numberOfTotalCalculationsDone; dimension++) {
+            if (bestDimensionDistance > distances[dimension][from][to] && myMoney > priceOfMovement[dimension][from][to]) {
+                bestDimension = dimension;
+                bestDimensionDistance = distances[dimension][from][to];
+            }
+        }
+        if (bestDimension == -1)
+            return from;
+        return nextNodeToMove[bestDimension][from][to];
     }
 
-    public double getScore(int nodeId, List<Integer> policeList) {
-        int closest = 1000000;
-        for (int police : policeList)
-            closest = Math.min(closest, getDistance(nodeId, police));
-        return closest;
-    }
-
-    public ArrayList<AIProto.Path> getAdjacent(int v) {
-        return adjacent[v];
+    public int getDistance(int from, int to, Double myMoney) {
+        int bestDimensionDistance = Integer.MAX_VALUE;
+        for (int dimension = 0; dimension < numberOfTotalCalculationsDone; dimension++) {
+            if (bestDimensionDistance > distances[dimension][from][to] && myMoney >= priceOfMovement[dimension][from][to]) {
+                bestDimensionDistance = distances[dimension][from][to];
+            }
+        }
+        return bestDimensionDistance;
     }
 
 }

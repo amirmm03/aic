@@ -31,6 +31,7 @@ public class PoliceAI extends AI {
      */
     @Override
     public int move(GameView gameView) {
+        policeGraphController.updateInfo();
         updateThief(gameView);
 
         if (thievesCaptured.isEmpty() || allThievesCaptured()) {
@@ -39,17 +40,17 @@ public class PoliceAI extends AI {
 
 
         Agent me = gameView.getViewer();
-        if (havePoliceHereWithHigherId(me)){
-            return policeGraphController.randomMove(me.getNodeId());
+        if (havePoliceHereWithHigherId(me)) {
+            return policeGraphController.randomMove(me.getNodeId(), gameView.getBalance());
         }
 
 
         Agent closestThief = policeGraphController.findClosestThief(gameView, thievesCaptured);
 
         if (thievesCaptured.get(closestThief)) {
-            return policeGraphController.randomMove(me.getNodeId());
+            return policeGraphController.randomMove(me.getNodeId(), gameView.getBalance());
         }
-        int nextNode = policeGraphController.getNextOnPath(me.getNodeId(), closestThief.getNodeId());
+        int nextNode = policeGraphController.getNextOnPath(me.getNodeId(), closestThief.getNodeId(), gameView.getBalance());
 
         if (nextNode == closestThief.getNodeId()) {
             thievesCaptured.put(closestThief, true);
@@ -60,7 +61,7 @@ public class PoliceAI extends AI {
 
     private boolean havePoliceHereWithHigherId(Agent me) {
         for (Agent otherPolice : OtherPolices) {
-            if (otherPolice.getNodeId()==me.getNodeId() && otherPolice.getId()>me.getId())
+            if (otherPolice.getNodeId() == me.getNodeId() && otherPolice.getId() > me.getId())
                 return true;
         }
         return false;
@@ -86,7 +87,7 @@ public class PoliceAI extends AI {
         }
         OtherPolices.clear();
         for (Agent myPolice : gameView.getVisibleAgentsList()) {
-            if (myPolice.getTeam()==me.getTeam() && myPolice.getType()== AIProto.AgentType.POLICE) {
+            if (myPolice.getTeam() == me.getTeam() && myPolice.getType() == AIProto.AgentType.POLICE) {
                 OtherPolices.add(myPolice);
                 for (Agent thief : thievesCaptured.keySet()) {
                     if (thief.getNodeId() == myPolice.getNodeId())

@@ -6,17 +6,18 @@ import ir.sharif.aic.hideandseek.protobuf.AIProto.GameView;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Random;
 
 public class ThiefAI extends AI {
     private static ArrayList<Integer>[] initialNodes = new ArrayList[2];
+
     static {
         initialNodes[0] = new ArrayList<Integer>();
         initialNodes[1] = new ArrayList<Integer>();
     }
 
 
-    private GraphController graphController;
+    private ThiefGraphController graphController;
+
     public ThiefAI(Phone phone) {
         this.phone = phone;
     }
@@ -26,15 +27,15 @@ public class ThiefAI extends AI {
      */
     @Override
     public int getStartingNode(GameView gameView) {
-        graphController = new GraphController(gameView.getConfig().getGraph());
+        graphController = new ThiefGraphController(gameView.getConfig().getGraph());
 
         int target = 2;
         double score = 0;
 
         for (Node node : gameView.getConfig().getGraph().getNodesList()) {
-            double tempScore = (double) graphController.getDistance(node.getId(), 1);
+            double tempScore = (double) graphController.getDistance(node.getId(), 1, Double.MAX_VALUE);
             for (Integer allayNode : initialNodes[gameView.getViewer().getTeam().getNumber()]) {
-                tempScore += ((double) graphController.getDistance(node.getId(), allayNode)) * 0.3;
+                tempScore += ((double) graphController.getDistance(node.getId(), allayNode, Double.MAX_VALUE)) * 0.3;
             }
 
             if (tempScore > score) {
@@ -52,6 +53,7 @@ public class ThiefAI extends AI {
      */
     @Override
     public int move(GameView gameView) {
+        graphController.updateInfo();
         Agent me = gameView.getViewer();
         ArrayList<Path> adjacentPath = graphController.getAdjacent(me.getNodeId());
         List<Integer> policeList = new ArrayList<>();
