@@ -1,21 +1,13 @@
 package ir.sharif.aic.hideandseek.ai;
 
+import com.google.type.DateTime;
 import ir.sharif.aic.hideandseek.client.Phone;
 import ir.sharif.aic.hideandseek.protobuf.AIProto.*;
 import ir.sharif.aic.hideandseek.protobuf.AIProto.GameView;
 
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 
 public class ThiefAI extends AI {
-    private static ArrayList<Integer>[] initialNodes = new ArrayList[2];
-
-    static {
-        initialNodes[0] = new ArrayList<Integer>();
-        initialNodes[1] = new ArrayList<Integer>();
-    }
-
-
     private ThiefGraphController graphController;
 
     public ThiefAI(Phone phone) {
@@ -30,21 +22,29 @@ public class ThiefAI extends AI {
         graphController = new ThiefGraphController(gameView.getConfig().getGraph());
 
         int target = 2;
-        double score = 0;
+        double bestScore = 0;
+
+        HashMap<Node, Integer> scores = new HashMap<>();
 
         for (Node node : gameView.getConfig().getGraph().getNodesList()) {
             double tempScore = (double) graphController.getDistance(node.getId(), 1, Double.MAX_VALUE);
-            for (Integer allayNode : initialNodes[gameView.getViewer().getTeam().getNumber()]) {
-                tempScore += ((double) graphController.getDistance(node.getId(), allayNode, Double.MAX_VALUE)) * 0.3;
-            }
-
-            if (tempScore > score) {
-                score = tempScore;
+            if (tempScore > bestScore) {
+                bestScore = tempScore;
                 target = node.getId();
             }
         }
 
-        initialNodes[gameView.getViewer().getTeam().getNumber()].add(target);
+        ArrayList<Node> goodNodes = new ArrayList<>();
+        for (Node node: gameView.getConfig().getGraph().getNodesList()) {
+            if (graphController.getDistance(node.getId(), 1, Double.MAX_VALUE) >= (bestScore * 2)/3) {
+                goodNodes.add(node);
+            }
+        }
+
+        Random random = new Random(System.currentTimeMillis());
+
+        target = goodNodes.get((random.nextInt(goodNodes.size()) + gameView.getViewer().getId())%goodNodes.size()).getId();
+
         return target;
     }
 
