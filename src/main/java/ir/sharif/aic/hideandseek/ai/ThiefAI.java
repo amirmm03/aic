@@ -34,17 +34,30 @@ public class ThiefAI extends AI {
             }
         }
 
-        ArrayList<Node> goodNodes = new ArrayList<>();
+        ArrayList<Integer> goodNodes = new ArrayList<>();
         for (Node node: gameView.getConfig().getGraph().getNodesList()) {
             if (graphController.getDistance(node.getId(), 1, Double.MAX_VALUE) >= (bestScore * 2)/3) {
-                goodNodes.add(node);
+                goodNodes.add(node.getId());
             }
         }
 
-        Random random = new Random(System.currentTimeMillis());
+//        Random random = new Random(System.currentTimeMillis());
+//
+//        target = goodNodes.get((random.nextInt(goodNodes.size()) + gameView.getViewer().getId())%goodNodes.size()).getId();
 
-        target = goodNodes.get((random.nextInt(goodNodes.size()) + gameView.getViewer().getId())%goodNodes.size()).getId();
-
+        ArrayList<Integer> myThieves = new ArrayList<>();
+        ArrayList<Integer> alreadyChosenNodes = new ArrayList<>();
+       // alreadyChosenNodes.add(1);
+        Agent me = gameView.getViewer();
+        for (Agent agent : gameView.getVisibleAgentsList()) {
+            if (agent.getTeamValue() == me.getTeamValue() && agent.getType() == AgentType.THIEF) {
+                myThieves.add(agent.getId());
+            }
+        }
+        myThieves.add(me.getId());
+        Collections.sort(myThieves);
+        ArrayList<Integer> chosenNodes = graphController.getBestCombinationOfNodes(goodNodes, myThieves.size(), alreadyChosenNodes);
+        target = chosenNodes.get(myThieves.indexOf(me.getId()));
         return target;
     }
 
@@ -57,13 +70,17 @@ public class ThiefAI extends AI {
         Agent me = gameView.getViewer();
         ArrayList<Path> adjacentPath = graphController.getAdjacent(me.getNodeId());
         List<Integer> policeList = new ArrayList<>();
-        for (Agent agent : gameView.getVisibleAgentsList())
+        List<Integer> thieveList = new ArrayList<>();
+        for (Agent agent : gameView.getVisibleAgentsList()) {
             if (agent.getTeamValue() != me.getTeamValue() && agent.getType() == AgentType.POLICE)
                 policeList.add(agent.getNodeId());
+            if (agent.getTeamValue() == me.getTeamValue() && agent.getType() == AgentType.THIEF)
+                thieveList.add(agent.getNodeId());
+        }
         int next = me.getNodeId();
         for (Path path : adjacentPath) {
             int adjacent = me.getNodeId() ^ path.getFirstNodeId() ^ path.getSecondNodeId();
-            if (graphController.getScore(next, policeList) <= graphController.getScore(adjacent, policeList))
+            if (graphController.getScore(next, policeList, thieveList) <= graphController.getScore(adjacent, policeList, thieveList))
                 next = adjacent;
         }
         return next;
