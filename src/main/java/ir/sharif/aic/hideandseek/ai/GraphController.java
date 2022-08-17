@@ -4,17 +4,16 @@ package ir.sharif.aic.hideandseek.ai;
 import ir.sharif.aic.hideandseek.protobuf.AIProto;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 
 public class GraphController {
     protected ArrayList<AIProto.Path>[] adjacent;
     private final AIProto.Graph graph;
     ArrayList<Integer> costOfPaths = new ArrayList<>();
-    private final int[][][] distances;
+    private final Pair[][][] distances;
     private final int[][][] nextNodeToMove;
     private final int[][][] priceOfMovement;
-    //                                               1     1  1     1   1   1   1 1 1
+    //                                            2  1  2  0  1  2  0 2 1 2 0 2 1 0 1 2
     //                                          {40,30,25,20,15,12,10,8,7,6,5,4,3,2,1,0};
     private final int[] weightedEdgePrices = {20, 10, 5, 2, 30, 15, 7, 3, 1, 40, 25, 12, 8, 6, 4, 0};
     private final int numberOfTotalCalculations;
@@ -24,7 +23,7 @@ public class GraphController {
         numberOfTotalCalculations = weightedEdgePrices.length;
         this.graph = graph;
         fillAdjacent();
-        distances = new int[numberOfTotalCalculations][][];
+        distances = new Pair[numberOfTotalCalculations][][];
         nextNodeToMove = new int[numberOfTotalCalculations][][];
         priceOfMovement = new int[numberOfTotalCalculations][][];
         floydWarshall(numberOfTotalCalculationsDone);
@@ -47,16 +46,18 @@ public class GraphController {
 
     public void floydWarshall(int dimension) {
         int nodesCount = graph.getNodesCount();
-        int[][] dimensionDistances = new int[nodesCount + 1][nodesCount + 1];
+        Pair[][] dimensionDistances = new Pair[nodesCount + 1][nodesCount + 1];
         int[][] dimensionNextNodeToMove = new int[nodesCount + 1][nodesCount + 1];
         int[][] dimensionPriceOfMovement = new int[nodesCount + 1][nodesCount + 1];
         for (int i = 1; i <= nodesCount; i++) {
             for (int j = 1; j <= nodesCount; j++) {
-                dimensionDistances[i][j] = Integer.MAX_VALUE / 2;
+                dimensionDistances[i][j] = new Pair();
+                dimensionDistances[i][j].WeightedDistance = Integer.MAX_VALUE / 2;
             }
         }
         for (int i = 1; i <= nodesCount; i++) {
-            dimensionDistances[i][i] = 0;
+            dimensionDistances[i][i].WeightedDistance = 0;
+            dimensionDistances[i][i].edges = 0;
             dimensionNextNodeToMove[i][i] = i;
             dimensionPriceOfMovement[i][i] = 0;
         }
@@ -64,8 +65,11 @@ public class GraphController {
             int v = path.getFirstNodeId();
             int u = path.getSecondNodeId();
 
-            dimensionDistances[v][u] = 1 + costOfPaths.indexOf((int) path.getPrice()) * weightedEdgePrices[dimension];
-            dimensionDistances[u][v] = dimensionDistances[v][u];
+            dimensionDistances[v][u].WeightedDistance = 1 + costOfPaths.indexOf((int) path.getPrice()) * weightedEdgePrices[dimension];
+            dimensionDistances[u][v].WeightedDistance = dimensionDistances[v][u].WeightedDistance;
+
+            dimensionDistances[u][v].edges = 1;
+            dimensionDistances[v][u].edges = 1;
 
             dimensionNextNodeToMove[v][u] = u;
             dimensionNextNodeToMove[u][v] = v;
@@ -77,8 +81,9 @@ public class GraphController {
         for (int k = 1; k <= nodesCount; k++)
             for (int i = 1; i <= nodesCount; i++)
                 for (int j = 1; j <= nodesCount; j++)
-                    if (dimensionDistances[i][j] > dimensionDistances[i][k] + dimensionDistances[k][j]) {
-                        dimensionDistances[i][j] = dimensionDistances[i][k] + dimensionDistances[k][j];
+                    if (dimensionDistances[i][j].WeightedDistance > dimensionDistances[i][k].WeightedDistance + dimensionDistances[k][j].WeightedDistance) {
+                        dimensionDistances[i][j].WeightedDistance = dimensionDistances[i][k].WeightedDistance + dimensionDistances[k][j].WeightedDistance;
+                        dimensionDistances[i][j].edges = dimensionDistances[i][k].edges + dimensionDistances[k][j].edges;
                         dimensionPriceOfMovement[i][j] = dimensionPriceOfMovement[i][k] + dimensionPriceOfMovement[k][j];
                         dimensionNextNodeToMove[i][j] = dimensionNextNodeToMove[i][k];
                     }
@@ -100,9 +105,9 @@ public class GraphController {
         int bestDimension = -1;
         int bestDimensionDistance = Integer.MAX_VALUE;
         for (int dimension = 0; dimension < numberOfTotalCalculationsDone; dimension++) {
-            if (bestDimensionDistance > distances[dimension][from][to] && myMoney > priceOfMovement[dimension][from][to]) {
+            if (bestDimensionDistance > distances[dimension][from][to].edges && myMoney > priceOfMovement[dimension][from][to]) {
                 bestDimension = dimension;
-                bestDimensionDistance = distances[dimension][from][to];
+                bestDimensionDistance = distances[dimension][from][to].edges;
             }
         }
         if (bestDimension == -1)
@@ -113,8 +118,8 @@ public class GraphController {
     public int getDistance(int from, int to, Double myMoney) {
         int bestDimensionDistance = Integer.MAX_VALUE;
         for (int dimension = 0; dimension < numberOfTotalCalculationsDone; dimension++) {
-            if (bestDimensionDistance > distances[dimension][from][to] && myMoney >= priceOfMovement[dimension][from][to]) {
-                bestDimensionDistance = distances[dimension][from][to];
+            if (bestDimensionDistance > distances[dimension][from][to].edges && myMoney >= priceOfMovement[dimension][from][to]) {
+                bestDimensionDistance = distances[dimension][from][to].edges;
             }
         }
         return bestDimensionDistance;
