@@ -13,9 +13,11 @@ public class GraphController {
     private final Pair[][][] distances;
     private final int[][][] nextNodeToMove;
     private final int[][][] priceOfMovement;
-    //                                            2  1  2  0  1  2  0 2 1 2 0 2 1 0 1 2
+
+    //                                               3  5  1  4  2  4 3 5 1 5 4 2 3 1 2
     //                                          {40,30,25,20,15,12,10,8,7,6,5,4,3,2,1,0};
-    private final int[] weightedEdgePrices = {20, 10, 5, 2, 30, 15, 7, 3, 1, 40, 25, 12, 8, 6, 4, 0};
+    private final int[] weightedEdgePrices = {20, 6, 1, 12, 3, 0, 30, 8, 2, 15, 10, 4, 25, 7, 5, 40};
+
     private final int numberOfTotalCalculations;
     private int numberOfTotalCalculationsDone = 0;
 

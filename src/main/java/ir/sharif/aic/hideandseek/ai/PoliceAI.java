@@ -34,7 +34,7 @@ public class PoliceAI extends AI {
         policeGraphController.updateInfo();
         updateThief(gameView);
 
-        if (thievesCaptured.isEmpty() || allThievesCaptured()) {
+        if (thievesCaptured.isEmpty()) {
             return policeGraphController.distributedMove(gameView);
         }
 
