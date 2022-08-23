@@ -33,14 +33,15 @@ public class ThiefGraphController extends GraphController {
         for (AIProto.Agent thief : thieveList) {
             thiefEffect += (double) getDistance(nodeId, thief.getNodeId(), Double.MAX_VALUE) / 3;
         }
-        thiefEffect /= thieveList.size();
+        if (thiefEffect != 0)
+            thiefEffect /= thieveList.size();
         output += thiefEffect;
 
         int closest = Integer.MAX_VALUE;
         for (Integer node : thievesVisibleLocations) {
             closest = Math.min(closest, getDistance(nodeId, node, Double.MAX_VALUE));
         }
-        output += (double) closest / 3;
+        output += (double) closest / 2;
 
 
         output += (double) getAdjacent(nodeId).size() / 4;
@@ -48,7 +49,7 @@ public class ThiefGraphController extends GraphController {
 //        for (AIProto.Path path : adjacentPath) {
 //            int adjacent = nodeId ^ path.getFirstNodeId() ^ path.getSecondNodeId();
 //            if (thievesVisibleLocations.contain(adjacent) )
-//                output /= 4;
+//                output /= 4;`
 //        }
 
 
@@ -88,8 +89,8 @@ public class ThiefGraphController extends GraphController {
         int ans = 10000000;
         for (Integer node1 : chosenNodes) {
             for (Integer node2 : chosenNodes) {
-                if (node1!=node2)
-                    ans = Math.min(ans , getDistance(node1,node2,Double.MAX_VALUE));
+                if (node1 != node2)
+                    ans = Math.min(ans, getDistance(node1, node2, Double.MAX_VALUE));
             }
         }
         return ans;

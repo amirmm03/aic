@@ -36,8 +36,8 @@ public class ThiefAI extends AI {
         }
 
         ArrayList<Integer> goodNodes = new ArrayList<>();
-        for (Node node: gameView.getConfig().getGraph().getNodesList()) {
-            if (graphController.getDistance(node.getId(), 1, Double.MAX_VALUE) >= (bestScore * 2)/3) {
+        for (Node node : gameView.getConfig().getGraph().getNodesList()) {
+            if (graphController.getDistance(node.getId(), 1, Double.MAX_VALUE) >= (bestScore * 2) / 3) {
                 goodNodes.add(node.getId());
             }
         }
@@ -48,7 +48,7 @@ public class ThiefAI extends AI {
 
         ArrayList<Integer> myThieves = new ArrayList<>();
         ArrayList<Integer> alreadyChosenNodes = new ArrayList<>();
-       // alreadyChosenNodes.add(1);
+        // alreadyChosenNodes.add(1);
         Agent me = gameView.getViewer();
         for (Agent agent : gameView.getVisibleAgentsList()) {
             if (agent.getTeamValue() == me.getTeamValue() && agent.getType() == AgentType.THIEF) {
@@ -70,30 +70,50 @@ public class ThiefAI extends AI {
         graphController.updateInfo();
         updateVisibleThief(gameView);
         Agent me = gameView.getViewer();
-        ArrayList<Path> adjacentPath = graphController.getAdjacent(me.getNodeId());
         List<Integer> policeList = new ArrayList<>();
         List<Agent> thieveList = new ArrayList<>();
         for (Agent agent : gameView.getVisibleAgentsList()) {
             if (agent.getTeamValue() != me.getTeamValue() && agent.getType() == AgentType.POLICE)
                 policeList.add(agent.getNodeId());
-            if (agent.getTeamValue() == me.getTeamValue() && agent.getType() == AgentType.THIEF)
+            if (agent.getTeamValue() == me.getTeamValue() && agent.getType() == AgentType.THIEF && !agent.getIsDead())
                 thieveList.add(agent);
         }
-        int next = me.getNodeId();
-        if (haveThiefHereWithHigherId(me,thieveList)){
-            return next;
+
+        //just updating till now
+
+
+        if (haveThiefHereWithHigherId(me, thieveList)) {
+            return me.getNodeId();
         }
-        for (Path path : adjacentPath) {
+        int bestNode = findBestNodeNear(me, gameView.getBalance(), policeList, thieveList);
+        return graphController.getNextOnPath(me.getNodeId(), bestNode, gameView.getBalance());
+
+    }
+
+    private int findBestNodeNear(Agent me, double myMoney, List<Integer> policeList, List<Agent> thieveList) {
+        int bestNode = me.getNodeId();
+
+        for (Path path : graphController.getAdjacent(me.getNodeId())) {
             int adjacent = me.getNodeId() ^ path.getFirstNodeId() ^ path.getSecondNodeId();
-            if (graphController.getScore(next, policeList, thieveList, thievesVisibleLocations) <= graphController.getScore(adjacent, policeList, thieveList, thievesVisibleLocations))
-                next = adjacent;
+            if (graphController.getScore(bestNode, policeList, thieveList, thievesVisibleLocations) <= graphController.getScore(adjacent, policeList, thieveList, thievesVisibleLocations)
+                    && myMoney > path.getPrice())
+                bestNode = adjacent;
+            if (graphController.getScore(bestNode, policeList, thieveList, thievesVisibleLocations) > 2) {
+                for (Path path1 : graphController.getAdjacent(adjacent)) {
+                    int adjacentAdjacent = adjacent ^ path1.getSecondNodeId() ^ path1.getFirstNodeId();
+                    if (graphController.getScore(bestNode, policeList, thieveList, thievesVisibleLocations) < graphController.getScore(adjacentAdjacent, policeList, thieveList, thievesVisibleLocations)
+                            && (myMoney > path.getPrice() + path1.getPrice()))
+                        bestNode = adjacentAdjacent;
+                }
+            }
         }
-        return next;
+
+        return bestNode;
     }
 
     private void updateVisibleThief(GameView gameView) {
         Agent me = gameView.getViewer();
-        if (gameView.getConfig().getTurnSettings().getVisibleTurnsList().contains(gameView.getTurn().getTurnNumber())) {
+        if (gameView.getConfig().getTurnSettings().getVisibleTurnsList().contains(gameView.getTurn().getTurnNumber()-1)) {
             thievesVisibleLocations = new ArrayList<>();
             for (Agent agent : gameView.getVisibleAgentsList()) {
                 if (agent.getTeamValue() == me.getTeamValue() && agent.getType() == AIProto.AgentType.THIEF && !agent.getIsDead()) {
@@ -104,7 +124,7 @@ public class ThiefAI extends AI {
         }
     }
 
-    private boolean haveThiefHereWithHigherId(Agent me , List<Agent> otherThieves) {
+    private boolean haveThiefHereWithHigherId(Agent me, List<Agent> otherThieves) {
         for (Agent thief : otherThieves) {
             if (thief.getNodeId() == me.getNodeId() && thief.getId() > me.getId())
                 return true;

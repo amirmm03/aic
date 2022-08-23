@@ -12,6 +12,7 @@ public class PoliceAI extends AI {
     private PoliceGraphController policeGraphController;
     private HashMap<Agent, Boolean> thievesCaptured = new HashMap<>();
     ArrayList<Agent> OtherPolices = new ArrayList<>();
+    private int numberOfMovesAfterGettingClose = 4;
 
     public PoliceAI(Phone phone) {
         this.phone = phone;
@@ -48,8 +49,10 @@ public class PoliceAI extends AI {
         Agent closestThief = policeGraphController.findClosestThief(gameView, thievesCaptured);
 
         if (thievesCaptured.get(closestThief)) {
-            return policeGraphController.randomMove(me.getNodeId(), gameView.getBalance());
+            numberOfMovesAfterGettingClose--;
+            return policeGraphController.randomMoveNearThief(me.getNodeId(), closestThief.getNodeId(), gameView.getBalance(), numberOfMovesAfterGettingClose);
         }
+        numberOfMovesAfterGettingClose = 4;
         int nextNode = policeGraphController.getNextOnPath(me.getNodeId(), closestThief.getNodeId(), gameView.getBalance());
 
         if (nextNode == closestThief.getNodeId()) {
@@ -67,13 +70,13 @@ public class PoliceAI extends AI {
         return false;
     }
 
-    private boolean allThievesCaptured() {
-        for (Agent agent : thievesCaptured.keySet()) {
-            if (!thievesCaptured.get(agent))
-                return false;
-        }
-        return true;
-    }
+//    private boolean allThievesCaptured() {
+//        for (Agent agent : thievesCaptured.keySet()) {
+//            if (!thievesCaptured.get(agent))
+//                return false;
+//        }
+//        return true;
+//    }
 
     private void updateThief(GameView gameView) {
         Agent me = gameView.getViewer();

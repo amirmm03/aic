@@ -57,7 +57,7 @@ public class PoliceGraphController extends GraphController {
                 continue;
             int minimumDistance = 100000;
             for (int j = 0; j < distributedNodes.size(); j++) {
-                minimumDistance = min(minimumDistance, getDistance(i,distributedNodes.get(j),Double.MAX_VALUE));
+                minimumDistance = min(minimumDistance, getDistance(i, distributedNodes.get(j), Double.MAX_VALUE));
             }
             if (minimumDistance > bestNodeMinimumDistance) {
                 bestNodeMinimumDistance = minimumDistance;
@@ -80,18 +80,20 @@ public class PoliceGraphController extends GraphController {
     }
 
 
-    public int randomMove(int myLocation , double balance) {
-        if (balance<=1)
+    public int bestNearNode(int myLocation, double balance, int depth) {
+        if (depth == 0)
             return myLocation;
-        int randomInt = random.nextInt(adjacent[myLocation].size());
-        AIProto.Path path = adjacent[myLocation].get(randomInt);
-        if (path.getPrice()>balance){
-            return randomMove(myLocation,balance/2);
+
+        int bestNode = myLocation;
+        for (AIProto.Path path : adjacent[myLocation]) {
+            int otherNode = path.getFirstNodeId() ^ path.getSecondNodeId() ^ myLocation;
+            if (path.getPrice() < balance) {
+                otherNode = bestNearNode(otherNode, balance - path.getPrice(), depth - 1);
+                if (adjacent[otherNode].size() > adjacent[bestNode].size())
+                    bestNode = otherNode;
+            }
         }
-        if (path.getFirstNodeId() == myLocation)
-            return path.getSecondNodeId();
-        else
-            return path.getFirstNodeId();
+        return bestNode;
     }
 
     public int distributedMove(AIProto.GameView gameView) {
@@ -114,7 +116,7 @@ public class PoliceGraphController extends GraphController {
                 }
             }
         }
-        return randomMove(me.getNodeId(),gameView.getBalance());
+        return bestNearNode(me.getNodeId(), gameView.getBalance(), 1);
     }
 
     private int findClosestNode(int nodeId, ArrayList<Integer> nodes, double balance) {
@@ -124,5 +126,26 @@ public class PoliceGraphController extends GraphController {
                 bestNode = distributedNode;
         }
         return bestNode;
+    }
+
+    public int randomMoveNearThief(int myNode, int thiefNode, double balance, int depth) {
+        if (getDistance(myNode, thiefNode, balance) >= 1) {
+            return getNextOnPath(myNode, thiefNode, balance);
+        }
+        return getNextOnPath(myNode, bestNearNode(myNode, balance, depth), balance);
+    }
+
+    public int randomMove(int myLocation, double balance) {
+        if (balance <= 1)
+            return myLocation;
+        int randomInt = random.nextInt(adjacent[myLocation].size());
+        AIProto.Path path = adjacent[myLocation].get(randomInt);
+        if (path.getPrice() > balance) {
+            return randomMove(myLocation, balance / 2);
+        }
+        if (path.getFirstNodeId() == myLocation)
+            return path.getSecondNodeId();
+        else
+            return path.getFirstNodeId();
     }
 }
