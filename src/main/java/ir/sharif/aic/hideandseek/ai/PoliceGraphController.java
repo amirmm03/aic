@@ -148,4 +148,84 @@ public class PoliceGraphController extends GraphController {
         else
             return path.getFirstNodeId();
     }
+
+    public int evaluate(ArrayList<Integer> policeNodes, ArrayList<Integer> thiefNodes) {
+        return 0;
+    }
+
+
+    private int temp_score = 0;
+
+    public int getNextNodeWithMinimax(int policeID, int depth,
+                                      LinkedHashMap<Integer, Integer> allies_ID_NODE,
+                                      ArrayList<Integer> thieves_NODE) {
+
+        int policeNodeId = allies_ID_NODE.get(policeID);
+
+        HashMap<Integer, Integer> nextScores = new HashMap<>();
+
+        for (AIProto.Path path : adjacent[policeNodeId]) {
+            int nextNode = policeNodeId ^ path.getFirstNodeId() ^ path.getSecondNodeId();
+
+
+            this.temp_score = 0;
+
+            LinkedHashMap<Integer, Integer> seenAllies_ID_NODE_toSend = new LinkedHashMap<>();
+            seenAllies_ID_NODE_toSend.put(policeNodeId, nextNode);
+
+            placeOthers(policeID, depth, seenAllies_ID_NODE_toSend, allies_ID_NODE, thieves_NODE);
+
+            nextScores.put(nextNode, temp_score);
+        }
+
+        int max = 0;
+        int max_nodeId = 0;
+
+        for (Integer nodeId : nextScores.keySet()) {
+            if (nextScores.get(nodeId) > max) {
+                max = nextScores.get(nodeId);
+                max_nodeId = nodeId;
+            }
+        }
+
+        return max_nodeId;
+    }
+
+    private void placeOthers(int policeId, int depth,
+                             LinkedHashMap<Integer, Integer> seenAllies_ID_NODE,
+                             LinkedHashMap<Integer, Integer> allies_ID_NODE,
+                             ArrayList<Integer> thieves_NODE) {
+
+        if (seenAllies_ID_NODE.keySet().size() == allies_ID_NODE.keySet().size()) {
+            if (depth < 3) {
+                placeOthers(policeId, depth + 1, new LinkedHashMap<>(), seenAllies_ID_NODE, thieves_NODE);
+            } else {
+                ArrayList<Integer> policePlaces = new ArrayList<>();
+                for (Integer allyId : seenAllies_ID_NODE.keySet()) {
+                    policePlaces.add(seenAllies_ID_NODE.get(allyId));
+                }
+
+                int score = evaluate(policePlaces, thieves_NODE);
+
+                if (score > temp_score) {
+                    temp_score = score;
+                }
+            }
+        }
+
+        for (Integer allyId : allies_ID_NODE.keySet()) {
+            if (!seenAllies_ID_NODE.keySet().contains(allyId)) {
+                int nodeId = allies_ID_NODE.get(allyId);
+                for (AIProto.Path path : adjacent[nodeId]) {
+                    int nextNode = nodeId ^ path.getSecondNodeId() ^ path.getFirstNodeId();
+                    seenAllies_ID_NODE.put(allyId, nextNode);
+
+                    placeOthers(policeId, depth, seenAllies_ID_NODE, allies_ID_NODE, thieves_NODE);
+
+                    seenAllies_ID_NODE.remove(allyId, nextNode);
+                }
+            }
+        }
+
+    }
 }
