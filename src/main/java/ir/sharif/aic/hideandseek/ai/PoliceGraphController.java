@@ -148,4 +148,39 @@ public class PoliceGraphController extends GraphController {
         else
             return path.getFirstNodeId();
     }
+
+    public int evaluate(ArrayList<Integer> policeNodes, ArrayList<Integer> thiefNodes) {
+        int score = 0;
+        ArrayList<Integer> destinations = new ArrayList<>();
+//        for (Integer policeNode : policeNodes) {
+//            destinations.add(findClosestNode(policeNode, thiefNodes, Double.MAX_VALUE));
+//        }
+//        HashSet<Integer> distinctiveDests = new HashSet<>(destinations);
+//        markUsed(policeNodes,destinations,distinctiveDests);
+//
+        for (Integer policeNode : policeNodes) {
+            for (Integer thiefNode : thiefNodes) {
+                if (policeNode == thiefNode)
+                    score += 10000;
+            }
+        }
+
+
+
+        return score;
+    }
+
+
+    public int distanceFromFirstIntersection(int a, int b, int dest) {
+        if (a == b)
+            return getDistance(a, dest, Double.MAX_VALUE);
+        int aDist = getDistance(a, dest, Double.MAX_VALUE);
+        int bDist = getDistance(b, dest, Double.MAX_VALUE);
+        if (aDist == bDist)
+            return distanceFromFirstIntersection(getNextOnPath(a, dest, Double.MAX_VALUE), getNextOnPath(b, dest, Double.MAX_VALUE), dest);
+        if (aDist > bDist)
+            return distanceFromFirstIntersection(getNextOnPath(a, dest, Double.MAX_VALUE), b, dest);
+        return distanceFromFirstIntersection(a, getNextOnPath(b, dest, Double.MAX_VALUE), dest);
+
+    }
 }
