@@ -45,20 +45,27 @@ public class ThiefAI extends AI {
 
 //        Random random = new Random(System.currentTimeMillis());
 //
-//        target = goodNodes.get((random.nextInt(goodNodes.size()) + gameView.getViewer().getId())%goodNodes.size()).getId();
+//        target = goodNodes.get((random.nextInt(goodNodes.size()) + gameView.getViewer().getId())%goodNodes.size());
 
         ArrayList<Integer> myThieves = new ArrayList<>();
         ArrayList<Integer> alreadyChosenNodes = new ArrayList<>();
         // alreadyChosenNodes.add(1);
         Agent me = gameView.getViewer();
         for (Agent agent : gameView.getVisibleAgentsList()) {
-           // System.out.println("my id is  "+me.getId() + " agent is "+agent.getType().name());
-            if (agent.getTeamValue() == me.getTeamValue() && (agent.getType() == AIProto.AgentType.THIEF || agent.getType() == AIProto.AgentType.JOKER)) {
+
+            if (agent.getTeamValue() == me.getTeamValue() &&
+               (agent.getType() == AgentType.THIEF || agent.getType() == AgentType.JOKER)) {
                 myThieves.add(agent.getId());
             }
         }
-        // TODO: 9/1/2022 remove
-       // myThieves.add(-1);
+
+        System.out.println(me.getType().toString());
+        System.out.flush();
+
+           // System.out.println("my id is  "+me.getId() + " agent is "+agent.getType().name());
+
+
+
         myThieves.add(me.getId());
 
         Collections.sort(myThieves);
