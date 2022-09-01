@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class PoliceAI extends AI {
     private PoliceGraphController policeGraphController;
-    private HashMap<Agent, Boolean> thievesCaptured = new HashMap<>();
+    private HashMap<MyThief, Boolean> thievesCaptured = new HashMap<>();
     ArrayList<Agent> OtherPolices = new ArrayList<>();
     private int numberOfMovesAfterGettingClose = 4;
 
@@ -40,7 +40,7 @@ public class PoliceAI extends AI {
         if (thievesCaptured.isEmpty()) {
             return policeGraphController.distributedMove(gameView);
         }
-
+        System.out.println("size of " + thievesCaptured.keySet().size());
 
         Agent me = gameView.getViewer();
         if (havePoliceHereWithHigherId(me)) {
@@ -48,7 +48,7 @@ public class PoliceAI extends AI {
         }
 
 
-        Agent closestThief = policeGraphController.findClosestThief(gameView, thievesCaptured);
+        MyThief closestThief = policeGraphController.findClosestThief(gameView, thievesCaptured);
 
         if (thievesCaptured.get(closestThief)) {
             numberOfMovesAfterGettingClose--;
@@ -102,16 +102,16 @@ public class PoliceAI extends AI {
         if (gameView.getConfig().getTurnSettings().getVisibleTurnsList().contains(gameView.getTurn().getTurnNumber())) {
             thievesCaptured = new HashMap<>();
             for (Agent agent : gameView.getVisibleAgentsList()) {
-                if (agent.getTeamValue() != me.getTeamValue() && (agent.getType() == AIProto.AgentType.THIEF )&& !agent.getIsDead()) {
-                    thievesCaptured.put(agent, false);
+                if (agent.getTeamValue() != me.getTeamValue() && (agent.getType() == AIProto.AgentType.THIEF || agent.getType() == AIProto.AgentType.JOKER) && !agent.getIsDead()) {
+                    thievesCaptured.put(new MyThief( gameView.getTurn().getTurnNumber(),agent.getNodeId(),agent.getType() == AIProto.AgentType.JOKER), false);
                 }
             }
         }
         OtherPolices.clear();
         for (Agent myPolice : gameView.getVisibleAgentsList()) {
-            if (myPolice.getTeam() == me.getTeam() && myPolice.getType() == AIProto.AgentType.POLICE) {
+            if (myPolice.getTeam() == me.getTeam() && (myPolice.getType() == AIProto.AgentType.POLICE || myPolice.getType() == AIProto.AgentType.BATMAN)) {
                 OtherPolices.add(myPolice);
-                for (Agent thief : thievesCaptured.keySet()) {
+                for (MyThief thief : thievesCaptured.keySet()) {
                     if (thief.getNodeId() == myPolice.getNodeId())
                         thievesCaptured.put(thief, true);
                 }

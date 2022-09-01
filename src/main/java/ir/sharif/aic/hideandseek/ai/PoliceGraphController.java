@@ -69,10 +69,10 @@ public class PoliceGraphController extends GraphController {
         distributedNodes.add(bestNode);
     }
 
-    public AIProto.Agent findClosestThief(AIProto.GameView gameView, HashMap<AIProto.Agent, Boolean> thievesCaptured) {
+    public MyThief findClosestThief(AIProto.GameView gameView, HashMap<MyThief, Boolean> thievesCaptured) {
         AIProto.Agent me = gameView.getViewer();
-        AIProto.Agent closestThief = null;
-        for (AIProto.Agent thief : thievesCaptured.keySet()) {
+        MyThief closestThief = null;
+        for (MyThief thief : thievesCaptured.keySet()) {
             if (closestThief == null)
                 closestThief = thief;
             if (getDistance(me.getNodeId(), thief.getNodeId(), gameView.getBalance()) < getDistance(me.getNodeId(), closestThief.getNodeId(), gameView.getBalance()))
@@ -191,17 +191,45 @@ public class PoliceGraphController extends GraphController {
                                       ArrayList<Integer> thieves_NODE) {
         ArrayList<Integer> policeNodes = new ArrayList<>(allies_ID_NODE.values());
 
-        bestEvalScore = evaluate(policeNodes, thieves_NODE);
+        bestEvalScore = -1;
         for (Integer id : allies_ID_NODE.keySet()) {
             for (AIProto.Path path : adjacent[allies_ID_NODE.get(id)]) {
+                int oldNode = allies_ID_NODE.get(id);
                 int newNode = path.getFirstNodeId() ^ path.getSecondNodeId() ^ allies_ID_NODE.get(id);
+                allies_ID_NODE.put(id,newNode);
+                int tmp = minimax(policeID,depth-1,allies_ID_NODE,thieves_NODE);
+                if (tmp > bestEvalScore){
+                    bestEvalScore = tmp;
+
+                }
+                allies_ID_NODE.put(id,oldNode);
+
             }
         }
         return 0;
 
     }
 
-//    public minimax() {
-//
-//    }
+    public int minimax(int policeID, int depth,
+                   LinkedHashMap<Integer, Integer> allies_ID_NODE,
+                   ArrayList<Integer> thieves_NODE) {
+        if (depth == 0 ){
+            ArrayList<Integer> policeNodes = new ArrayList<>(allies_ID_NODE.values());
+            return evaluate(policeNodes,thieves_NODE);
+        }
+
+
+        int best = -1;
+        for (Integer id : allies_ID_NODE.keySet()) {
+            for (AIProto.Path path : adjacent[allies_ID_NODE.get(id)]) {
+                int oldNode = allies_ID_NODE.get(id);
+                int newNode = path.getFirstNodeId() ^ path.getSecondNodeId() ^ allies_ID_NODE.get(id);
+                allies_ID_NODE.put(id,newNode);
+                best = Math.max(best , minimax(policeID,depth-1,allies_ID_NODE,thieves_NODE));
+                allies_ID_NODE.put(id,oldNode);
+            }
+        }
+        return best;
+
+    }
 }
