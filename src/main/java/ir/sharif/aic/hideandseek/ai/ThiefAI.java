@@ -58,7 +58,7 @@ public class ThiefAI extends AI {
             }
         }
         // TODO: 9/1/2022 remove
-        myThieves.add(-1);
+       // myThieves.add(-1);
         myThieves.add(me.getId());
 
         Collections.sort(myThieves);

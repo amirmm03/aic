@@ -80,7 +80,7 @@ public class PoliceGraphController extends GraphController {
         }
         return closestThief;
     }
-
+    
 
     public int bestNearNode(int myLocation, double balance, int depth) {
         if (depth == 0)
@@ -217,6 +217,7 @@ public class PoliceGraphController extends GraphController {
             ArrayList<Integer> policeNodes = new ArrayList<>(allies_ID_NODE.values());
             return evaluate(policeNodes,thieves_NODE);
         }
+
 
 
         int best = -1;
