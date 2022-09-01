@@ -64,8 +64,6 @@ public class PoliceAI extends AI {
         }
 
 
-
-
         if (gameView.getConfig().getTurnSettings().getVisibleTurnsList().contains(currentTurn)) {
             for (Agent agent : gameView.getVisibleAgentsList()) {
                 if (agent.getType() == AIProto.AgentType.JOKER &&
@@ -82,9 +80,9 @@ public class PoliceAI extends AI {
         }
 
 
-        if (false) {
-
-            return gameView.getViewer().getNodeId();
+        Agent me = gameView.getViewer();
+        if (getJokerNode()!=null && me.getType() == AIProto.AgentType.BATMAN) {
+            return policeGraphController.getNextOnPath(me.getNodeId(),getJokerNode(), gameView.getBalance());
         } else {
 
 
@@ -93,7 +91,7 @@ public class PoliceAI extends AI {
             }
 
 
-            Agent me = gameView.getViewer();
+
             if (havePoliceHereWithHigherId(me)) {
                 return policeGraphController.randomMove(me.getNodeId(), gameView.getBalance());
             }
@@ -155,11 +153,11 @@ public class PoliceAI extends AI {
 
             for (Agent agent : gameView.getVisibleAgentsList()) {
                 if (agent.getTeamValue() != me.getTeamValue() &&
-                    (agent.getType() == AIProto.AgentType.THIEF || agent.getType() == AIProto.AgentType.JOKER)
-                    && !agent.getIsDead()) {
+                        (agent.getType() == AIProto.AgentType.THIEF || agent.getType() == AIProto.AgentType.JOKER)
+                        && !agent.getIsDead()) {
                     seenAgents.add(agent);
 
-                    thievesCaptured.put(new MyThief( gameView.getTurn().getTurnNumber(),agent.getNodeId(),agent.getType() == AIProto.AgentType.JOKER), false);
+                    thievesCaptured.put(new MyThief(gameView.getTurn().getTurnNumber(), agent.getNodeId(), agent.getType() == AIProto.AgentType.JOKER), false);
                 }
             }
 
@@ -199,7 +197,7 @@ public class PoliceAI extends AI {
     private ArrayList<MyThief> getThievesFromMessage(int turnNumber, String message) {
         ArrayList<MyThief> result = new ArrayList<>();
 
-        int count = message.length()/9;
+        int count = message.length() / 9;
         for (int i = 0; i < count; i++) {
             String agentMessage = message.substring(i * 9, (i + 1) * 9);
             int node = Integer.parseInt(agentMessage.substring(1, 9), 2);
@@ -210,6 +208,15 @@ public class PoliceAI extends AI {
     }
 
 
+    private Integer getJokerNode() {
+
+        for (MyThief myThief : thievesCaptured.keySet()) {
+            if (myThief.isJoker && !thievesCaptured.get(myThief)) {
+                return myThief.node;
+            }
+        }
+        return null;
+    }
 
     private String getChatMessage(AIProto.AgentType type, int nodeId) {
         String nodeIdString = String.format("%" + 8 + "s",

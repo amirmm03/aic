@@ -3,7 +3,6 @@ package ir.sharif.aic.hideandseek.ai;
 import ir.sharif.aic.hideandseek.protobuf.AIProto;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 public class ThiefGraphController extends GraphController {

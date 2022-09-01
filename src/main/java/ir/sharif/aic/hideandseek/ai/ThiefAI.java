@@ -26,7 +26,6 @@ public class ThiefAI extends AI {
         int target = 2;
         double bestScore = 0;
 
-        HashMap<Node, Integer> scores = new HashMap<>();
 
         for (Node node : gameView.getConfig().getGraph().getNodesList()) {
             double tempScore = (double) graphController.getDistance(node.getId(), 1, Double.MAX_VALUE);
@@ -35,6 +34,8 @@ public class ThiefAI extends AI {
                 target = node.getId();
             }
         }
+
+        if (gameView.getViewer().getType() == AgentType.JOKER) return target;
 
         ArrayList<Integer> goodNodes = new ArrayList<>();
         for (Node node : gameView.getConfig().getGraph().getNodesList()) {
@@ -54,16 +55,13 @@ public class ThiefAI extends AI {
         for (Agent agent : gameView.getVisibleAgentsList()) {
 
             if (agent.getTeamValue() == me.getTeamValue() &&
-               (agent.getType() == AgentType.THIEF || agent.getType() == AgentType.JOKER)) {
+                    (agent.getType() == AgentType.THIEF || agent.getType() == AgentType.JOKER)) {
                 myThieves.add(agent.getId());
             }
         }
 
-        System.out.println(me.getType().toString());
-        System.out.flush();
 
-           // System.out.println("my id is  "+me.getId() + " agent is "+agent.getType().name());
-
+        // System.out.println("my id is  "+me.getId() + " agent is "+agent.getType().name());
 
 
         myThieves.add(me.getId());
