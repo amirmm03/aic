@@ -12,7 +12,7 @@ import java.util.Map;
 
 public class PoliceAI extends AI {
     private PoliceGraphController policeGraphController;
-    private HashMap<Agent, Boolean> thievesCaptured = new HashMap<>();
+    private HashMap<MyThief, Boolean> thievesCaptured = new HashMap<>();
     ArrayList<Agent> OtherPolices = new ArrayList<>();
     private int numberOfMovesAfterGettingClose = 4;
 
@@ -43,11 +43,22 @@ public class PoliceAI extends AI {
     public int move(GameView gameView) {
         int currentTurn = gameView.getTurn().getTurnNumber();
 
+        updateThief(gameView);
+        policeGraphController.updateInfo();
+
         for (int i = lastChatBoxSize; i < gameView.getChatBoxCount(); i++) {
             AIProto.Chat chat = gameView.getChatBox(i);
+            MessageData messageData = extractData(chat.getText());
+            MyThief myThief = new MyThief(currentTurn, messageData.nodeId, messageData.type == AIProto.AgentType.JOKER);
 
-
+            thievesCaptured.put(myThief, false);
         }
+        if (thievesCaptured.isEmpty()) {
+            return policeGraphController.distributedMove(gameView);
+        }
+        System.out.println("size of " + thievesCaptured.keySet().size());
+
+
         lastChatBoxSize = gameView.getChatBoxCount();
 
 
@@ -61,6 +72,7 @@ public class PoliceAI extends AI {
             }
         }
 
+        MyThief closestThief = policeGraphController.findClosestThief(gameView, thievesCaptured);
 
         if (currentTurn - joker_last_notify >= 3 && currentTurn - joker_last_update <= 3) {
             joker_last_notify.byteValue();
@@ -72,8 +84,6 @@ public class PoliceAI extends AI {
             return gameView.getViewer().getNodeId();
         } else {
 
-            policeGraphController.updateInfo();
-            updateThief(gameView);
 
             if (thievesCaptured.isEmpty()) {
                 return policeGraphController.distributedMove(gameView);
@@ -139,16 +149,20 @@ public class PoliceAI extends AI {
         if (gameView.getConfig().getTurnSettings().getVisibleTurnsList().contains(gameView.getTurn().getTurnNumber())) {
             thievesCaptured = new HashMap<>();
             for (Agent agent : gameView.getVisibleAgentsList()) {
-                if (agent.getTeamValue() != me.getTeamValue() && (agent.getType() == AIProto.AgentType.THIEF )&& !agent.getIsDead()) {
-                    thievesCaptured.put(agent, false);
+                if (agent.getTeamValue() != me.getTeamValue() && (agent.getType() == AIProto.AgentType.THIEF || agent.getType() == AIProto.AgentType.JOKER) && !agent.getIsDead()) {
+                    if (agent.getType() != AIProto.AgentType.JOKER) {
+                        phone.sendMessage(getChatMessage(agent.getType(), agent.getNodeId()));
+                    }
+
+                    thievesCaptured.put(new MyThief( gameView.getTurn().getTurnNumber(),agent.getNodeId(),agent.getType() == AIProto.AgentType.JOKER), false);
                 }
             }
         }
         OtherPolices.clear();
         for (Agent myPolice : gameView.getVisibleAgentsList()) {
-            if (myPolice.getTeam() == me.getTeam() && myPolice.getType() == AIProto.AgentType.POLICE) {
+            if (myPolice.getTeam() == me.getTeam() && (myPolice.getType() == AIProto.AgentType.POLICE || myPolice.getType() == AIProto.AgentType.BATMAN)) {
                 OtherPolices.add(myPolice);
-                for (Agent thief : thievesCaptured.keySet()) {
+                for (MyThief thief : thievesCaptured.keySet()) {
                     if (thief.getNodeId() == myPolice.getNodeId())
                         thievesCaptured.put(thief, true);
                 }

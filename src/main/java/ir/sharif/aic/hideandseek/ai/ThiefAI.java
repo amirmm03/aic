@@ -5,6 +5,7 @@ import ir.sharif.aic.hideandseek.protobuf.AIProto;
 import ir.sharif.aic.hideandseek.protobuf.AIProto.*;
 import ir.sharif.aic.hideandseek.protobuf.AIProto.GameView;
 
+import java.lang.reflect.Array;
 import java.util.*;
 
 public class ThiefAI extends AI {
@@ -51,6 +52,7 @@ public class ThiefAI extends AI {
         // alreadyChosenNodes.add(1);
         Agent me = gameView.getViewer();
         for (Agent agent : gameView.getVisibleAgentsList()) {
+<<<<<<< HEAD
             if (agent.getTeamValue() == me.getTeamValue() &&
                (agent.getType() == AgentType.THIEF || agent.getType() == AgentType.JOKER)) {
                 myThieves.add(agent.getId());
@@ -59,9 +61,21 @@ public class ThiefAI extends AI {
 
         System.out.println(me.getType().toString());
         System.out.flush();
+=======
+           // System.out.println("my id is  "+me.getId() + " agent is "+agent.getType().name());
+            if (agent.getTeamValue() == me.getTeamValue() && (agent.getType() == AIProto.AgentType.THIEF || agent.getType() == AIProto.AgentType.JOKER)) {
+                myThieves.add(agent.getId());
+            }
+        }
+        // TODO: 9/1/2022 remove
+        myThieves.add(-1);
+>>>>>>> c376cbf2b8cbbf7f9ab9e9209186dc094cbcc3e1
         myThieves.add(me.getId());
+
         Collections.sort(myThieves);
         ArrayList<Integer> chosenNodes = graphController.getBestCombinationOfNodes(goodNodes, myThieves.size(), alreadyChosenNodes);
+
+
         target = chosenNodes.get(myThieves.indexOf(me.getId()));
         return target;
     }
@@ -79,7 +93,7 @@ public class ThiefAI extends AI {
         for (Agent agent : gameView.getVisibleAgentsList()) {
             if (agent.getTeamValue() != me.getTeamValue() && agent.getType() == AgentType.POLICE)
                 policeList.add(agent.getNodeId());
-            if (agent.getTeamValue() == me.getTeamValue() && agent.getType() == AgentType.THIEF && !agent.getIsDead())
+            if (agent.getTeamValue() == me.getTeamValue() && (agent.getType() == AIProto.AgentType.THIEF || agent.getType() == AIProto.AgentType.JOKER) && !agent.getIsDead())
                 thieveList.add(agent);
         }
 
@@ -117,10 +131,10 @@ public class ThiefAI extends AI {
 
     private void updateVisibleThief(GameView gameView) {
         Agent me = gameView.getViewer();
-        if (gameView.getConfig().getTurnSettings().getVisibleTurnsList().contains(gameView.getTurn().getTurnNumber()-1)) {
+        if (gameView.getConfig().getTurnSettings().getVisibleTurnsList().contains(gameView.getTurn().getTurnNumber() - 1)) {
             thievesVisibleLocations = new ArrayList<>();
             for (Agent agent : gameView.getVisibleAgentsList()) {
-                if (agent.getTeamValue() == me.getTeamValue() && agent.getType() == AIProto.AgentType.THIEF && !agent.getIsDead()) {
+                if (agent.getTeamValue() == me.getTeamValue() && (agent.getType() == AIProto.AgentType.THIEF || agent.getType() == AIProto.AgentType.JOKER) && !agent.getIsDead()) {
                     thievesVisibleLocations.add(agent.getNodeId());
                 }
             }
