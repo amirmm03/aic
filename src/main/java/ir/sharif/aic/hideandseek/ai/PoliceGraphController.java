@@ -10,6 +10,8 @@ import static java.lang.Math.min;
 public class PoliceGraphController extends GraphController {
 
     private final Random random;
+    public int numberOfOps;
+    public int bestEvalScore;
 
     private final ArrayList<Integer> distributedNodes = new ArrayList<>();
     private final ArrayList<Integer> policeIds = new ArrayList<>();
@@ -150,23 +152,23 @@ public class PoliceGraphController extends GraphController {
     }
 
     public int evaluate(ArrayList<Integer> policeNodes, ArrayList<Integer> thiefNodes) {
+
         int score = 0;
-        ArrayList<Integer> destinations = new ArrayList<>();
+//        ArrayList<Integer> destinations = new ArrayList<>();
 //        for (Integer policeNode : policeNodes) {
 //            destinations.add(findClosestNode(policeNode, thiefNodes, Double.MAX_VALUE));
 //        }
-//        HashSet<Integer> distinctiveDests = new HashSet<>(destinations);
-//        markUsed(policeNodes,destinations,distinctiveDests);
 //
-        for (Integer policeNode : policeNodes) {
-            for (Integer thiefNode : thiefNodes) {
-                if (policeNode == thiefNode)
-                    score += 10000;
-            }
-        }
+//        for (Integer policeNode : policeNodes) {
+//            for (Integer thiefNode : thiefNodes) {
+//                if (policeNode == thiefNode)
+//                    score += 10000;
+//            }
+//        }
+//
+//
 
-
-
+        numberOfOps++;
         return score;
     }
 
@@ -181,6 +183,25 @@ public class PoliceGraphController extends GraphController {
         if (aDist > bDist)
             return distanceFromFirstIntersection(getNextOnPath(a, dest, Double.MAX_VALUE), b, dest);
         return distanceFromFirstIntersection(a, getNextOnPath(b, dest, Double.MAX_VALUE), dest);
+    }
+
+
+    public int getNextNodeWithMinimax(int policeID, int depth,
+                                      LinkedHashMap<Integer, Integer> allies_ID_NODE,
+                                      ArrayList<Integer> thieves_NODE) {
+        ArrayList<Integer> policeNodes = new ArrayList<>(allies_ID_NODE.values());
+
+        bestEvalScore = evaluate(policeNodes, thieves_NODE);
+        for (Integer id : allies_ID_NODE.keySet()) {
+            for (AIProto.Path path : adjacent[allies_ID_NODE.get(id)]) {
+                int newNode = path.getFirstNodeId() ^ path.getSecondNodeId() ^ allies_ID_NODE.get(id);
+            }
+        }
+        return 0;
 
     }
+
+//    public minimax() {
+//
+//    }
 }

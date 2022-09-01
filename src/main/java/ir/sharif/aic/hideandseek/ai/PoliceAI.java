@@ -7,6 +7,8 @@ import ir.sharif.aic.hideandseek.protobuf.AIProto.Agent;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.Map;
 
 public class PoliceAI extends AI {
     private PoliceGraphController policeGraphController;
@@ -52,12 +54,29 @@ public class PoliceAI extends AI {
             numberOfMovesAfterGettingClose--;
             return policeGraphController.randomMoveNearThief(me.getNodeId(), closestThief.getNodeId(), gameView.getBalance(), numberOfMovesAfterGettingClose);
         }
+//        LinkedHashMap<Integer, Integer> polices = new LinkedHashMap<>();
+//        for (Agent otherPolice : OtherPolices) {
+//            polices.put(otherPolice.getId(), otherPolice.getNodeId());
+//        }
+//        polices.put(me.getId(), me.getNodeId());
+//        ArrayList<Integer> thiefNodes = new ArrayList<>();
+//        for (Agent agent : thievesCaptured.keySet()) {
+//            if (!thievesCaptured.get(agent))
+//                thiefNodes.add(agent.getNodeId());
+//        }
+//
+//        int targetNode = policeGraphController.getNextNodeWithMinimax(me.getId(), 2, polices, thiefNodes);
+//        if (policeGraphController.bestEvalScore>10000) {
+//            return targetNode;
+//        }
+
         numberOfMovesAfterGettingClose = 4;
         int nextNode = policeGraphController.getNextOnPath(me.getNodeId(), closestThief.getNodeId(), gameView.getBalance());
 
         if (nextNode == closestThief.getNodeId()) {
             thievesCaptured.put(closestThief, true);
         }
+
         return nextNode;
 
     }
@@ -83,7 +102,7 @@ public class PoliceAI extends AI {
         if (gameView.getConfig().getTurnSettings().getVisibleTurnsList().contains(gameView.getTurn().getTurnNumber())) {
             thievesCaptured = new HashMap<>();
             for (Agent agent : gameView.getVisibleAgentsList()) {
-                if (agent.getTeamValue() != me.getTeamValue() && agent.getType() == AIProto.AgentType.THIEF && !agent.getIsDead()) {
+                if (agent.getTeamValue() != me.getTeamValue() && (agent.getType() == AIProto.AgentType.THIEF )&& !agent.getIsDead()) {
                     thievesCaptured.put(agent, false);
                 }
             }
