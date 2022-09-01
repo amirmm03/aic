@@ -104,9 +104,18 @@ public class PoliceGraphController extends GraphController {
         return bestNode;
     }
 
+    private boolean distributeNodesUpdate = true;
+
     public int distributedMove(AIProto.GameView gameView) {
 
-        fillDistributedNodes(gameView);
+        if (gameView.getTurn().getTurnNumber() % 7 == 5)
+            distributeNodesUpdate = true;
+
+        if (distributeNodesUpdate) {
+            fillDistributedNodes(gameView);
+            distributeNodesUpdate = false;
+        }
+
         AIProto.Agent me = gameView.getViewer();
 
         ArrayList<Integer> copy = new ArrayList<>(distributedNodes);
@@ -238,5 +247,54 @@ public class PoliceGraphController extends GraphController {
         }
         return best;
 
+    }
+
+    public int getNextOnPathWithoutIntersection(int myNode, int thiefNode, double balance, ArrayList<AIProto.Agent> otherPolices, ArrayList<MyThief> thieves) {
+        ArrayList<Integer> destinations = new ArrayList<>();
+        ArrayList<Integer> thiefNodes = new ArrayList<>();
+
+        for (MyThief thief : thieves) {
+            thiefNodes.add(thief.getNodeId());
+        }
+
+        for (AIProto.Agent policeNode : otherPolices) {
+            if ((findClosestNode(policeNode.getNodeId(), thiefNodes, balance)) == thiefNode) {
+                if (getDistance(myNode, thiefNode, balance) > getDistance(policeNode.getNodeId(), thiefNode, balance)) {
+                    return newPath(myNode, thiefNode, balance);
+                }
+            }
+        }
+        return getNextOnPath(myNode, thiefNode, balance);
+
+    }
+
+    private int newPath(int myNode, int thiefNode, double balance) {
+
+        for (AIProto.Path path : adjacent[thiefNode]) {
+            int adjNode = path.getFirstNodeId() ^ path.getSecondNodeId() ^ thiefNode;
+            if (adjNode != getNodeBeforeDestination(myNode, thiefNode, balance) && getNodeBeforeDestination(myNode, adjNode, balance) != thiefNode) {
+                return getNextOnPath(myNode, adjNode, balance);
+            }
+        }
+
+
+        for (AIProto.Path path1 : adjacent[thiefNode]) {
+            int adjNode1 = path1.getFirstNodeId() ^ path1.getSecondNodeId() ^ thiefNode;
+            if (adjNode1 != getNodeBeforeDestination(myNode, thiefNode, balance)) {
+                for (AIProto.Path path2 : adjacent[adjNode1]) {
+                    int adjNode2 = path2.getFirstNodeId() ^ path2.getSecondNodeId() ^ adjNode1;
+                    if (adjNode2 != getNodeBeforeDestination(myNode, adjNode1, balance) && getNodeBeforeDestination(myNode, adjNode2, balance) != adjNode1) {
+                        return getNextOnPath(myNode, adjNode2, balance);
+                    }
+
+                }
+            }
+        }
+
+        return getNextOnPath(myNode, thiefNode, balance);
+    }
+
+    private int getNodeBeforeDestination(int from, int dest, double balance) {
+        return getNextOnPath(dest, from, balance);
     }
 }

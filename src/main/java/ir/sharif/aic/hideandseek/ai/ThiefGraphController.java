@@ -15,7 +15,7 @@ public class ThiefGraphController extends GraphController {
 
         double output = 10000000;
 
-        if (thievesVisibleLocations.contains(nodeId)) return 0;
+
 
         for (int police : policeList)
             output = Math.min(output, getDistance(nodeId, police, Double.MAX_VALUE));
@@ -23,6 +23,8 @@ public class ThiefGraphController extends GraphController {
         if (output <= 2) {
             return output;
         }
+
+        if (thievesVisibleLocations.contains(nodeId)) return 1;
 
         for (int police : policeList)
             output += (getDistance(nodeId, police, Double.MAX_VALUE));

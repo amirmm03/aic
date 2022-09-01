@@ -5,7 +5,6 @@ import ir.sharif.aic.hideandseek.protobuf.AIProto;
 import ir.sharif.aic.hideandseek.protobuf.AIProto.*;
 import ir.sharif.aic.hideandseek.protobuf.AIProto.GameView;
 
-import java.lang.reflect.Array;
 import java.util.*;
 
 public class ThiefAI extends AI {
@@ -80,16 +79,17 @@ public class ThiefAI extends AI {
     @Override
     public int move(GameView gameView) {
         graphController.updateInfo();
-        updateVisibleThief(gameView);
+
         Agent me = gameView.getViewer();
         List<Integer> policeList = new ArrayList<>();
         List<Agent> thieveList = new ArrayList<>();
         for (Agent agent : gameView.getVisibleAgentsList()) {
-            if (agent.getTeamValue() != me.getTeamValue() && agent.getType() == AgentType.POLICE)
+            if (agent.getTeamValue() != me.getTeamValue() && (agent.getType() == AgentType.POLICE || agent.getType() == AgentType.BATMAN))
                 policeList.add(agent.getNodeId());
             if (agent.getTeamValue() == me.getTeamValue() && (agent.getType() == AIProto.AgentType.THIEF || agent.getType() == AIProto.AgentType.JOKER) && !agent.getIsDead())
                 thieveList.add(agent);
         }
+        updateVisibleThief(gameView, policeList);
 
         //just updating till now
 
@@ -123,17 +123,31 @@ public class ThiefAI extends AI {
         return bestNode;
     }
 
-    private void updateVisibleThief(GameView gameView) {
+    private void updateVisibleThief(GameView gameView, List<Integer> policeList) {
         Agent me = gameView.getViewer();
         if (gameView.getConfig().getTurnSettings().getVisibleTurnsList().contains(gameView.getTurn().getTurnNumber() - 1)) {
             thievesVisibleLocations = new ArrayList<>();
             for (Agent agent : gameView.getVisibleAgentsList()) {
-                if (agent.getTeamValue() == me.getTeamValue() && (agent.getType() == AIProto.AgentType.THIEF || agent.getType() == AIProto.AgentType.JOKER) && !agent.getIsDead()) {
+                if (agent.getTeamValue() == me.getTeamValue() && agent.getType() == AIProto.AgentType.JOKER && !agent.getIsDead()
+                        && thereIsPoliceInRadius(agent.getNodeId(), gameView.getConfig().getGraph().getVisibleRadiusYPoliceJoker(), policeList)) {
+                    thievesVisibleLocations.add(agent.getNodeId());
+                }
+                if (agent.getTeamValue() == me.getTeamValue() && agent.getType() == AgentType.THIEF && !agent.getIsDead()
+                        && thereIsPoliceInRadius(agent.getNodeId(), gameView.getConfig().getGraph().getVisibleRadiusXPoliceThief(), policeList)) {
                     thievesVisibleLocations.add(agent.getNodeId());
                 }
             }
             thievesVisibleLocations.add(me.getNodeId());
         }
+    }
+
+    private boolean thereIsPoliceInRadius(int myNode, int radius, List<Integer> policeNodes) {
+        for (Integer policeNode : policeNodes) {
+            if (graphController.getDistance(myNode, policeNode, 0.1) <= radius) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private boolean haveThiefHereWithHigherId(Agent me, List<Agent> otherThieves) {

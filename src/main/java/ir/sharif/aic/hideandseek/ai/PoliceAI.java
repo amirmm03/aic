@@ -5,6 +5,8 @@ import ir.sharif.aic.hideandseek.protobuf.AIProto;
 import ir.sharif.aic.hideandseek.protobuf.AIProto.GameView;
 import ir.sharif.aic.hideandseek.protobuf.AIProto.Agent;
 
+import javax.swing.plaf.TableHeaderUI;
+import java.lang.invoke.MutableCallSite;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -81,27 +83,26 @@ public class PoliceAI extends AI {
 
 
         Agent me = gameView.getViewer();
-        if (getJokerNode()!=null && me.getType() == AIProto.AgentType.BATMAN) {
-            return policeGraphController.getNextOnPath(me.getNodeId(),getJokerNode(), gameView.getBalance());
-        } else {
+        MyThief joker = getJokerNode();
+        if (joker != null && thievesCaptured.keySet().size() > 1) {
+            thievesCaptured.clear();
+            thievesCaptured.put(joker, false);
+        }
+//        if (getJokerNode()!=null && me.getType() == AIProto.AgentType.BATMAN) {
+//            return policeGraphController.getNextOnPath(me.getNodeId(),getJokerNode().node, gameView.getBalance());
+//        } else {
 
 
-            if (thievesCaptured.isEmpty()) {
-                return policeGraphController.distributedMove(gameView);
-            }
+        if (havePoliceHereWithHigherId(me)) {
+            return policeGraphController.randomMove(me.getNodeId(), gameView.getBalance());
+        }
 
 
-
-            if (havePoliceHereWithHigherId(me)) {
-                return policeGraphController.randomMove(me.getNodeId(), gameView.getBalance());
-            }
-
-
-            MyThief closestThief = policeGraphController.findClosestThief(gameView, thievesCaptured);
-            if (thievesCaptured.get(closestThief)) {
-                numberOfMovesAfterGettingClose--;
-                return policeGraphController.randomMoveNearThief(me.getNodeId(), closestThief.getNodeId(), gameView.getBalance(), numberOfMovesAfterGettingClose);
-            }
+        MyThief closestThief = policeGraphController.findClosestThief(gameView, thievesCaptured);
+        if (thievesCaptured.get(closestThief)) {
+            numberOfMovesAfterGettingClose--;
+            return policeGraphController.randomMoveNearThief(me.getNodeId(), closestThief.getNodeId(), gameView.getBalance(), numberOfMovesAfterGettingClose);
+        }
 //        LinkedHashMap<Integer, Integer> polices = new LinkedHashMap<>();
 //        for (Agent otherPolice : OtherPolices) {
 //            polices.put(otherPolice.getId(), otherPolice.getNodeId());
@@ -118,14 +119,14 @@ public class PoliceAI extends AI {
 //            return targetNode;
 //        }
 
-            numberOfMovesAfterGettingClose = 4;
-            int nextNode = policeGraphController.getNextOnPath(me.getNodeId(), closestThief.getNodeId(), gameView.getBalance());
+        numberOfMovesAfterGettingClose = 4;
+        int nextNode = policeGraphController.getNextOnPathWithoutIntersection(me.getNodeId(), closestThief.getNodeId(), gameView.getBalance(),OtherPolices,new ArrayList<>(thievesCaptured.keySet()));
 
-            if (nextNode == closestThief.getNodeId()) {
-                thievesCaptured.put(closestThief, true);
-            }
-            return nextNode;
+        if (nextNode == closestThief.getNodeId()) {
+            thievesCaptured.put(closestThief, true);
         }
+        return nextNode;
+        // }
     }
 
     private boolean havePoliceHereWithHigherId(Agent me) {
@@ -208,11 +209,11 @@ public class PoliceAI extends AI {
     }
 
 
-    private Integer getJokerNode() {
+    private MyThief getJokerNode() {
 
         for (MyThief myThief : thievesCaptured.keySet()) {
             if (myThief.isJoker && !thievesCaptured.get(myThief)) {
-                return myThief.node;
+                return myThief;
             }
         }
         return null;
