@@ -16,6 +16,11 @@ public class PoliceAI extends AI {
     ArrayList<Agent> OtherPolices = new ArrayList<>();
     private int numberOfMovesAfterGettingClose = 4;
 
+    private int lastSentChat = 0;
+
+    private Integer joker_node = 0;
+    private Integer joker_last_update = 0;
+    private Integer joker_last_notify = 0;
 
     private int lastChatBoxSize = 0;
 
@@ -45,24 +50,47 @@ public class PoliceAI extends AI {
 
         for (int i = lastChatBoxSize; i < gameView.getChatBoxCount(); i++) {
             AIProto.Chat chat = gameView.getChatBox(i);
-            MessageData messageData = extractData(chat.getText());
-            MyThief myThief = new MyThief(currentTurn, messageData.nodeId, messageData.type == AIProto.AgentType.JOKER);
+            ArrayList<MyThief> badAgents = getThievesFromMessage(currentTurn, chat.getText());
 
-            thievesCaptured.put(myThief, false);
+            for (MyThief badAgent : badAgents) {
+                thievesCaptured.put(badAgent, false);
+            }
+
         }
+        lastChatBoxSize = gameView.getChatBoxCount();
+
         if (thievesCaptured.isEmpty()) {
             return policeGraphController.distributedMove(gameView);
         }
-        //System.out.println("size of " + thievesCaptured.keySet().size());
 
 
-        lastChatBoxSize = gameView.getChatBoxCount();
+
+
+        if (gameView.getConfig().getTurnSettings().getVisibleTurnsList().contains(currentTurn)) {
+            for (Agent agent : gameView.getVisibleAgentsList()) {
+                if (agent.getType() == AIProto.AgentType.JOKER &&
+                        agent.getTeamValue() != gameView.getViewer().getTeamValue()) {
+                    joker_last_update = gameView.getTurn().getTurnNumber();
+                    joker_node = agent.getNodeId();
+                }
+            }
+        }
+
+
+        if (currentTurn - joker_last_notify >= 3 && currentTurn - joker_last_update <= 3) {
+            joker_last_notify.byteValue();
+        }
 
 
         if (false) {
 
             return gameView.getViewer().getNodeId();
         } else {
+
+
+            if (thievesCaptured.isEmpty()) {
+                return policeGraphController.distributedMove(gameView);
+            }
 
 
             Agent me = gameView.getViewer();
@@ -122,14 +150,26 @@ public class PoliceAI extends AI {
         Agent me = gameView.getViewer();
         if (gameView.getConfig().getTurnSettings().getVisibleTurnsList().contains(gameView.getTurn().getTurnNumber())) {
             thievesCaptured = new HashMap<>();
+
+            ArrayList<Agent> seenAgents = new ArrayList<>();
+
             for (Agent agent : gameView.getVisibleAgentsList()) {
-                if (agent.getTeamValue() != me.getTeamValue() && (agent.getType() == AIProto.AgentType.THIEF || agent.getType() == AIProto.AgentType.JOKER) && !agent.getIsDead()) {
-                    if (agent.getType() != AIProto.AgentType.JOKER) {
-                        phone.sendMessage(getChatMessage(agent.getType(), agent.getNodeId()));
-                    }
+                if (agent.getTeamValue() != me.getTeamValue() &&
+                    (agent.getType() == AIProto.AgentType.THIEF || agent.getType() == AIProto.AgentType.JOKER)
+                    && !agent.getIsDead()) {
+                    seenAgents.add(agent);
 
                     thievesCaptured.put(new MyThief( gameView.getTurn().getTurnNumber(),agent.getNodeId(),agent.getType() == AIProto.AgentType.JOKER), false);
                 }
+            }
+
+            int currentTurn = gameView.getTurn().getTurnNumber();
+
+            String toSend = getChatMessageThiefArray(seenAgents).toString();
+
+            if (currentTurn - lastSentChat > 4 && gameView.getBalance() > toSend.length() && !toSend.isEmpty()) {
+                lastSentChat = currentTurn;
+                phone.sendMessage(toSend);
             }
         }
         OtherPolices.clear();
@@ -143,6 +183,32 @@ public class PoliceAI extends AI {
             }
         }
     }
+
+    private StringBuilder getChatMessageThiefArray(ArrayList<Agent> agents) {
+        StringBuilder message = new StringBuilder();
+        for (Agent agent : agents) {
+            if (agent.getType() == AIProto.AgentType.JOKER) {
+                message.append("1");
+            } else message.append("0");
+            message.append(String.format("%" + 8 + "s",
+                    Integer.toBinaryString(agent.getNodeId())).replaceAll(" ", "0"));
+        }
+        return message;
+    }
+
+    private ArrayList<MyThief> getThievesFromMessage(int turnNumber, String message) {
+        ArrayList<MyThief> result = new ArrayList<>();
+
+        int count = message.length()/9;
+        for (int i = 0; i < count; i++) {
+            String agentMessage = message.substring(i * 9, (i + 1) * 9);
+            int node = Integer.parseInt(agentMessage.substring(1, 9), 2);
+            result.add(new MyThief(turnNumber, node, agentMessage.charAt(0) == '1'));
+        }
+
+        return result;
+    }
+
 
 
     private String getChatMessage(AIProto.AgentType type, int nodeId) {
