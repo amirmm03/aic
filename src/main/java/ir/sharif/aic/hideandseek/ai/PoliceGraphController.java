@@ -13,7 +13,7 @@ public class PoliceGraphController extends GraphController {
     public int numberOfOps;
     public int bestEvalScore;
 
-    private final ArrayList<Integer> distributedNodes = new ArrayList<>();
+    private final LinkedHashSet<Integer> distributedNodes = new LinkedHashSet<>();
     private final ArrayList<Integer> policeIds = new ArrayList<>();
     FileWriter fileWriter;
 
@@ -27,25 +27,28 @@ public class PoliceGraphController extends GraphController {
 //        }
         random = new Random(gameView.getViewer().getId() * 1793L + System.currentTimeMillis() * 7);
 
-        fillDistributedNodes(gameView);
-
     }
 
     private void fillDistributedNodes(AIProto.GameView gameView) {
         fillPoliceIds(gameView);
-
-        distributedNodes.add(1);
+        int delete = distributedNodes.size();
         for (int i = 0; i < policeIds.size(); i++) {
             addNextNodeToDistributedList(gameView.getConfig().getGraph().getNodesCount());
         }
-        distributedNodes.remove(0);
+        for (int i = 0; i < delete; i++) {
+            distributedNodes.remove(0);
+        }
+
     }
 
     private void fillPoliceIds(AIProto.GameView gameView) {
+        policeIds.clear();
+        distributedNodes.clear();
         policeIds.add(gameView.getViewer().getId());
         for (AIProto.Agent agent : gameView.getVisibleAgentsList()) {
-            if (agent.getTeamValue() == gameView.getViewer().getTeamValue() && agent.getType() == AIProto.AgentType.POLICE) {
+            if (agent.getTeamValue() == gameView.getViewer().getTeamValue() && (agent.getType() == AIProto.AgentType.POLICE || agent.getType() == AIProto.AgentType.BATMAN)) {
                 policeIds.add(agent.getId());
+                distributedNodes.add(agent.getNodeId());
             }
         }
         Collections.sort(policeIds);
@@ -58,8 +61,11 @@ public class PoliceGraphController extends GraphController {
             if (distributedNodes.contains(i))
                 continue;
             int minimumDistance = 100000;
+            Integer[] distributedNodesArray = new Integer[distributedNodes.size()];
+            distributedNodesArray = distributedNodes.toArray(distributedNodesArray);
+
             for (int j = 0; j < distributedNodes.size(); j++) {
-                minimumDistance = min(minimumDistance, getDistance(i, distributedNodes.get(j), Double.MAX_VALUE));
+                minimumDistance = min(minimumDistance, getDistance(i, distributedNodesArray[j], Double.MAX_VALUE));
             }
             if (minimumDistance > bestNodeMinimumDistance) {
                 bestNodeMinimumDistance = minimumDistance;
@@ -80,7 +86,7 @@ public class PoliceGraphController extends GraphController {
         }
         return closestThief;
     }
-    
+
 
     public int bestNearNode(int myLocation, double balance, int depth) {
         if (depth == 0)
@@ -100,9 +106,10 @@ public class PoliceGraphController extends GraphController {
 
     public int distributedMove(AIProto.GameView gameView) {
 
+        fillDistributedNodes(gameView);
         AIProto.Agent me = gameView.getViewer();
 
-        ArrayList<Integer> copy = (ArrayList<Integer>) distributedNodes.clone();
+        ArrayList<Integer> copy = new ArrayList<>(distributedNodes);
 
         ArrayList<AIProto.Agent> agents = new ArrayList<>(gameView.getVisibleAgentsList());
         agents.add(me);
@@ -196,13 +203,13 @@ public class PoliceGraphController extends GraphController {
             for (AIProto.Path path : adjacent[allies_ID_NODE.get(id)]) {
                 int oldNode = allies_ID_NODE.get(id);
                 int newNode = path.getFirstNodeId() ^ path.getSecondNodeId() ^ allies_ID_NODE.get(id);
-                allies_ID_NODE.put(id,newNode);
-                int tmp = minimax(policeID,depth-1,allies_ID_NODE,thieves_NODE);
-                if (tmp > bestEvalScore){
+                allies_ID_NODE.put(id, newNode);
+                int tmp = minimax(policeID, depth - 1, allies_ID_NODE, thieves_NODE);
+                if (tmp > bestEvalScore) {
                     bestEvalScore = tmp;
 
                 }
-                allies_ID_NODE.put(id,oldNode);
+                allies_ID_NODE.put(id, oldNode);
 
             }
         }
@@ -211,13 +218,12 @@ public class PoliceGraphController extends GraphController {
     }
 
     public int minimax(int policeID, int depth,
-                   LinkedHashMap<Integer, Integer> allies_ID_NODE,
-                   ArrayList<Integer> thieves_NODE) {
-        if (depth == 0 ){
+                       LinkedHashMap<Integer, Integer> allies_ID_NODE,
+                       ArrayList<Integer> thieves_NODE) {
+        if (depth == 0) {
             ArrayList<Integer> policeNodes = new ArrayList<>(allies_ID_NODE.values());
-            return evaluate(policeNodes,thieves_NODE);
+            return evaluate(policeNodes, thieves_NODE);
         }
-
 
 
         int best = -1;
@@ -225,9 +231,9 @@ public class PoliceGraphController extends GraphController {
             for (AIProto.Path path : adjacent[allies_ID_NODE.get(id)]) {
                 int oldNode = allies_ID_NODE.get(id);
                 int newNode = path.getFirstNodeId() ^ path.getSecondNodeId() ^ allies_ID_NODE.get(id);
-                allies_ID_NODE.put(id,newNode);
-                best = Math.max(best , minimax(policeID,depth-1,allies_ID_NODE,thieves_NODE));
-                allies_ID_NODE.put(id,oldNode);
+                allies_ID_NODE.put(id, newNode);
+                best = Math.max(best, minimax(policeID, depth - 1, allies_ID_NODE, thieves_NODE));
+                allies_ID_NODE.put(id, oldNode);
             }
         }
         return best;

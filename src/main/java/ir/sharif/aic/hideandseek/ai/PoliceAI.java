@@ -16,9 +16,6 @@ public class PoliceAI extends AI {
     ArrayList<Agent> OtherPolices = new ArrayList<>();
     private int numberOfMovesAfterGettingClose = 4;
 
-    private Integer joker_node = 0;
-    private Integer joker_last_update = 0;
-    private Integer joker_last_notify = 0;
 
     private int lastChatBoxSize = 0;
 
@@ -62,31 +59,10 @@ public class PoliceAI extends AI {
         lastChatBoxSize = gameView.getChatBoxCount();
 
 
-        if (gameView.getConfig().getTurnSettings().getVisibleTurnsList().contains(currentTurn)) {
-            for (Agent agent : gameView.getVisibleAgentsList()) {
-                if (agent.getType() == AIProto.AgentType.JOKER &&
-                        agent.getTeamValue() != gameView.getViewer().getTeamValue()) {
-                    joker_last_update = gameView.getTurn().getTurnNumber();
-                    joker_node = agent.getNodeId();
-                }
-            }
-        }
-
-
-        if (currentTurn - joker_last_notify >= 3 && currentTurn - joker_last_update <= 3) {
-            joker_last_notify.byteValue();
-        }
-
-
         if (false) {
 
             return gameView.getViewer().getNodeId();
         } else {
-
-
-            if (thievesCaptured.isEmpty()) {
-                return policeGraphController.distributedMove(gameView);
-            }
 
 
             Agent me = gameView.getViewer();
