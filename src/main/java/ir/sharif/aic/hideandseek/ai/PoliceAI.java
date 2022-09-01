@@ -16,6 +16,13 @@ public class PoliceAI extends AI {
     ArrayList<Agent> OtherPolices = new ArrayList<>();
     private int numberOfMovesAfterGettingClose = 4;
 
+    private Integer joker_node = 0;
+    private Integer joker_last_update = 0;
+    private Integer joker_last_notify = 0;
+
+    private int lastChatBoxSize = 0;
+
+
     public PoliceAI(Phone phone) {
         this.phone = phone;
     }
@@ -34,26 +41,57 @@ public class PoliceAI extends AI {
      */
     @Override
     public int move(GameView gameView) {
-        policeGraphController.updateInfo();
-        updateThief(gameView);
+        int currentTurn = gameView.getTurn().getTurnNumber();
 
-        if (thievesCaptured.isEmpty()) {
-            return policeGraphController.distributedMove(gameView);
+        for (int i = lastChatBoxSize; i < gameView.getChatBoxCount(); i++) {
+            AIProto.Chat chat = gameView.getChatBox(i);
+
+
+        }
+        lastChatBoxSize = gameView.getChatBoxCount();
+
+
+        if (gameView.getConfig().getTurnSettings().getVisibleTurnsList().contains(currentTurn)) {
+            for (Agent agent : gameView.getVisibleAgentsList()) {
+                if (agent.getType() == AIProto.AgentType.JOKER &&
+                        agent.getTeamValue() != gameView.getViewer().getTeamValue()) {
+                    joker_last_update = gameView.getTurn().getTurnNumber();
+                    joker_node = agent.getNodeId();
+                }
+            }
         }
 
 
-        Agent me = gameView.getViewer();
-        if (havePoliceHereWithHigherId(me)) {
-            return policeGraphController.randomMove(me.getNodeId(), gameView.getBalance());
+        if (currentTurn - joker_last_notify >= 3 && currentTurn - joker_last_update <= 3) {
+            joker_last_notify.byteValue();
         }
 
 
-        Agent closestThief = policeGraphController.findClosestThief(gameView, thievesCaptured);
+        if (true) {
 
-        if (thievesCaptured.get(closestThief)) {
-            numberOfMovesAfterGettingClose--;
-            return policeGraphController.randomMoveNearThief(me.getNodeId(), closestThief.getNodeId(), gameView.getBalance(), numberOfMovesAfterGettingClose);
-        }
+            return gameView.getViewer().getNodeId();
+        } else {
+
+            policeGraphController.updateInfo();
+            updateThief(gameView);
+
+            if (thievesCaptured.isEmpty()) {
+                return policeGraphController.distributedMove(gameView);
+            }
+
+
+            Agent me = gameView.getViewer();
+            if (havePoliceHereWithHigherId(me)) {
+                return policeGraphController.randomMove(me.getNodeId(), gameView.getBalance());
+            }
+
+
+            Agent closestThief = policeGraphController.findClosestThief(gameView, thievesCaptured);
+
+            if (thievesCaptured.get(closestThief)) {
+                numberOfMovesAfterGettingClose--;
+                return policeGraphController.randomMoveNearThief(me.getNodeId(), closestThief.getNodeId(), gameView.getBalance(), numberOfMovesAfterGettingClose);
+            }
 //        LinkedHashMap<Integer, Integer> polices = new LinkedHashMap<>();
 //        for (Agent otherPolice : OtherPolices) {
 //            polices.put(otherPolice.getId(), otherPolice.getNodeId());
@@ -70,15 +108,14 @@ public class PoliceAI extends AI {
 //            return targetNode;
 //        }
 
-        numberOfMovesAfterGettingClose = 4;
-        int nextNode = policeGraphController.getNextOnPath(me.getNodeId(), closestThief.getNodeId(), gameView.getBalance());
+            numberOfMovesAfterGettingClose = 4;
+            int nextNode = policeGraphController.getNextOnPath(me.getNodeId(), closestThief.getNodeId(), gameView.getBalance());
 
-        if (nextNode == closestThief.getNodeId()) {
-            thievesCaptured.put(closestThief, true);
+            if (nextNode == closestThief.getNodeId()) {
+                thievesCaptured.put(closestThief, true);
+            }
+            return nextNode;
         }
-
-        return nextNode;
-
     }
 
     private boolean havePoliceHereWithHigherId(Agent me) {
@@ -119,4 +156,37 @@ public class PoliceAI extends AI {
         }
     }
 
+
+    private String getChatMessage(AIProto.AgentType type, int nodeId) {
+        String nodeIdString = String.format("%" + 8 + "s",
+                Integer.toBinaryString(nodeId)).replaceAll(" ", "0");
+
+        if (type == AIProto.AgentType.JOKER) {
+            return "1" + nodeIdString;
+        } else {
+            return "0" + nodeIdString;
+        }
+    }
+
+    private MessageData extractData(String message) {
+        int nodeId = Integer.parseInt(message.substring(1, 9), 2);
+
+        if (message.charAt(0) == '1') {
+            return new MessageData(AIProto.AgentType.JOKER, nodeId);
+        } else {
+            return new MessageData(AIProto.AgentType.THIEF, nodeId);
+        }
+    }
 }
+
+
+class MessageData {
+    public AIProto.AgentType type;
+    public int nodeId;
+
+    public MessageData(AIProto.AgentType type, int nodeId) {
+        this.type = type;
+        this.nodeId = nodeId;
+    }
+}
+

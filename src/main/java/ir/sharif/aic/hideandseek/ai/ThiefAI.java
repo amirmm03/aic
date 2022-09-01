@@ -44,17 +44,21 @@ public class ThiefAI extends AI {
 
 //        Random random = new Random(System.currentTimeMillis());
 //
-//        target = goodNodes.get((random.nextInt(goodNodes.size()) + gameView.getViewer().getId())%goodNodes.size()).getId();
+//        target = goodNodes.get((random.nextInt(goodNodes.size()) + gameView.getViewer().getId())%goodNodes.size());
 
         ArrayList<Integer> myThieves = new ArrayList<>();
         ArrayList<Integer> alreadyChosenNodes = new ArrayList<>();
         // alreadyChosenNodes.add(1);
         Agent me = gameView.getViewer();
         for (Agent agent : gameView.getVisibleAgentsList()) {
-            if (agent.getTeamValue() == me.getTeamValue() && agent.getType() == AgentType.THIEF) {
+            if (agent.getTeamValue() == me.getTeamValue() &&
+               (agent.getType() == AgentType.THIEF || agent.getType() == AgentType.JOKER)) {
                 myThieves.add(agent.getId());
             }
         }
+
+        System.out.println(me.getType().toString());
+        System.out.flush();
         myThieves.add(me.getId());
         Collections.sort(myThieves);
         ArrayList<Integer> chosenNodes = graphController.getBestCombinationOfNodes(goodNodes, myThieves.size(), alreadyChosenNodes);
