@@ -23,6 +23,10 @@ public class ThiefAI extends AI {
     public int getStartingNode(GameView gameView) {
         graphController = new ThiefGraphController(gameView.getConfig().getGraph());
 
+        graphController.graphCenter = graphController.findGraphCenter(gameView);
+
+        System.out.println("==================" + graphController.graphCenter + "==============");
+
         int target = 2;
         double bestScore = 0;
 
@@ -98,7 +102,7 @@ public class ThiefAI extends AI {
         if (haveThiefHereWithHigherId(me, thieveList)) {
             return me.getNodeId();
         }
-        return graphController.bestNodeWithMinimax(me.getNodeId(),policeList,thieveList,thievesVisibleLocations,6,myLastKnownLoc,gameView.getTurn().getTurnNumber(),gameView.getConfig().getTurnSettings().getVisibleTurnsList());
+        return graphController.bestNodeWithMinimax(me.getNodeId(),policeList,thieveList,thievesVisibleLocations,3,myLastKnownLoc,gameView.getTurn().getTurnNumber(),gameView.getConfig().getTurnSettings().getVisibleTurnsList(),me.getId(),gameView.getBalance(),gameView.getConfig().getIncomeSettings().getThievesIncomeEachTurn());
 //        int bestNode = findBestNodeNear(me, gameView.getBalance(), policeList, thieveList);
 //        return graphController.getNextOnPath(me.getNodeId(), bestNode, gameView.getBalance());
 

@@ -3,9 +3,12 @@ package ir.sharif.aic.hideandseek.ai;
 import ir.sharif.aic.hideandseek.protobuf.AIProto;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ThiefGraphController extends GraphController {
+
+    public int graphCenter;
 
     public ThiefGraphController(AIProto.Graph graph) {
         super(graph);
@@ -27,7 +30,8 @@ public class ThiefGraphController extends GraphController {
 
         for (myPolice police : policeList)
             output += (getDistance(nodeId, police.node, Double.MAX_VALUE));
-        output /= policeList.size();
+        if (policeList.size() != 0)
+            output /= policeList.size();
 
         int thiefEffect = 0;
         for (AIProto.Agent thief : thieveList) {
@@ -41,10 +45,13 @@ public class ThiefGraphController extends GraphController {
         for (Integer node : thievesVisibleLocations) {
             closest = Math.min(closest, getDistance(nodeId, node, Double.MAX_VALUE));
         }
-        output += (double) closest / 2;
+        if (!thievesVisibleLocations.isEmpty())
+            output += (double) closest / 2;
 
 
-        output += (double) getAdjacent(nodeId).size() / 4;
+        output += Math.max(0, 50 - getDistance(nodeId, graphCenter, Double.MAX_VALUE));
+
+        output += adjacent[nodeId].size() * 10;
 
 //        for (AIProto.Path path : adjacentPath) {
 //            int adjacent = nodeId ^ path.getFirstNodeId() ^ path.getSecondNodeId();
@@ -108,40 +115,61 @@ public class ThiefGraphController extends GraphController {
         return price;
     }
 
-    public int bestNodeWithMinimax(int myCurrentLoc, List<myPolice> policeList, List<AIProto.Agent> thieveList, ArrayList<Integer> thievesVisibleLocations, int depth, int myLastKnownLoc, int thisturn, List<Integer> visibleTurnsList) {
-        double bestScore = getScore(myCurrentLoc,policeList,thieveList,thievesVisibleLocations);
-
+    public int bestNodeWithMinimax(int myCurrentLoc, List<myPolice> policeList, List<AIProto.Agent> thieveList, ArrayList<Integer> thievesVisibleLocations, int depth, int myLastKnownLoc, int thisturn, List<Integer> visibleTurnsList, int myid, double balance, double extraMoney) {
+        double bestScore = getScore(myCurrentLoc, policeList, thieveList, thievesVisibleLocations);
         int bestMove = myCurrentLoc;
+
         for (AIProto.Path path : adjacent[myCurrentLoc]) {
+            if (path.getPrice() > balance)
+                continue;
             int nextNode = path.getFirstNodeId() ^ path.getSecondNodeId() ^ myCurrentLoc;
             List<myPolice> clonedPolice = new ArrayList<>(policeList);
-            policeMove(clonedPolice, myLastKnownLoc);
-            double tmpScore = minimax(nextNode,clonedPolice,thieveList,thievesVisibleLocations,depth-1,myLastKnownLoc,thisturn+2,visibleTurnsList );
+            //  policeMove(clonedPolice, myLastKnownLoc);
+            double tmpScore = minimax(nextNode, clonedPolice, thieveList, thievesVisibleLocations, depth - 1, myLastKnownLoc, thisturn + 2, visibleTurnsList, balance - path.getPrice() + extraMoney, extraMoney,myid);
             if (tmpScore > bestScore) {
                 bestScore = tmpScore;
                 bestMove = nextNode;
             }
+
         }
         return bestMove;
     }
 
-    public double minimax(int myCurrentLoc, List<myPolice> policeList, List<AIProto.Agent> thieveList, ArrayList<Integer> thievesVisibleLocations, int depth, int myLastKnownLoc, int thisturn, List<Integer> visibleTurnsList) {
+    public double minimax(int myCurrentLoc, List<myPolice> policeList, List<AIProto.Agent> thieveList, ArrayList<Integer> thievesVisibleLocations, int depth, int myLastKnownLoc, int thisturn, List<Integer> visibleTurnsList, double balance, double extraMoney,int myId) {
 
         if (depth == 0)
-            return getScore(myCurrentLoc,policeList,thieveList,thievesVisibleLocations);
-        double bestScore = getScore(myCurrentLoc,policeList,thieveList,thievesVisibleLocations);
-        if (bestScore<1){
-            return 0;
-        }
-        if (visibleTurnsList.contains(thisturn-1)){
+            return getScore(myCurrentLoc, policeList, thieveList, thievesVisibleLocations);
+        if (visibleTurnsList.contains(thisturn - 1)) {
             myLastKnownLoc = myCurrentLoc;
+            thievesVisibleLocations = new ArrayList<>();
+            thievesVisibleLocations.add(myCurrentLoc);
+            thieveList = new ArrayList<>();
         }
+        List<myPolice> clonedPolice = new ArrayList<>();
+        if (getScore(myCurrentLoc, policeList, thieveList, thievesVisibleLocations)<1)
+            return -1;
+        for (myPolice myPolice : policeList) {
+            clonedPolice.add(new myPolice(myPolice.id, myPolice.node));
+        }
+        policeMove(clonedPolice, myLastKnownLoc);
+        double bestScore = getScore(myCurrentLoc, clonedPolice, thieveList, thievesVisibleLocations);
+
+        if (myId == 2) {
+            for (myPolice myPolice : policeList) {
+                System.out.print(" police id : " + myPolice.id + " node: " + myPolice.node);
+            }
+            System.out.println(" i am " + myId + " turn is " + thisturn + " node is " + myCurrentLoc + " score is " + bestScore);
+        }
+        if (bestScore < 1) {
+            return -1;
+        }
+
         for (AIProto.Path path : adjacent[myCurrentLoc]) {
             int nextNode = path.getFirstNodeId() ^ path.getSecondNodeId() ^ myCurrentLoc;
+            if (path.getPrice() > balance)
+                continue;
 
-            List<myPolice> clonedPolice = new ArrayList<>(policeList);
-            policeMove(clonedPolice, myLastKnownLoc);
-            double tmpScore = minimax(nextNode,clonedPolice,thieveList,thievesVisibleLocations,depth-1,myLastKnownLoc,thisturn+2,visibleTurnsList );
+            double tmpScore = minimax(nextNode, clonedPolice, thieveList, thievesVisibleLocations, depth - 1, myLastKnownLoc, thisturn + 2, visibleTurnsList, balance - path.getPrice() + extraMoney, extraMoney,myId);
             if (tmpScore > bestScore) {
                 bestScore = tmpScore;
             }
@@ -154,10 +182,9 @@ public class ThiefGraphController extends GraphController {
 
             if (havePoliceHereWithHigherId(policeList, i)) {
                 randomMove(policeList.get(i));
-                break;
+                continue;
             }
             policeList.get(i).node = getNextOnPathWithoutIntersection(policeList.get(i), myLastKnownPlace, policeList);
-            break;
         }
     }
 
@@ -220,6 +247,41 @@ public class ThiefGraphController extends GraphController {
     }
 
 
+    public int findGraphCenter(AIProto.GameView gameView) {
+        List<AIProto.Node> nodes = gameView.getConfig().getGraph().getNodesList();
 
+        ArrayList<NodeMax> nodeMaxes = new ArrayList<>();
+
+        for (AIProto.Node node : nodes) {
+            int max = 0;
+            for (AIProto.Node nodee : nodes) {
+                int d = getDistance(node.getId(), nodee.getId(), 1000d);
+                max = Math.max(d, max);
+            }
+            nodeMaxes.add(new NodeMax(max, node.getId()));
+        }
+
+        int minId = 0;
+        int min = Integer.MAX_VALUE;
+
+        for (NodeMax nodeMax : nodeMaxes) {
+            if (nodeMax.max < min) {
+                min = nodeMax.max;
+                minId = nodeMax.nodeId;
+            }
+        }
+
+        return minId;
+    }
+}
+
+class NodeMax {
+    public int max;
+    public int nodeId;
+
+    public NodeMax(int max, int nodeId) {
+        this.max = max;
+        this.nodeId = nodeId;
+    }
 
 }
