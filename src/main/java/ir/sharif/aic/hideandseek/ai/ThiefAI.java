@@ -12,6 +12,8 @@ public class ThiefAI extends AI {
     private ArrayList<Integer> thievesVisibleLocations = new ArrayList<>();
     private int myLastKnownLoc = 1;
 
+    private int lastChatIndex = 0;
+
     public ThiefAI(Phone phone) {
         this.phone = phone;
     }
@@ -93,7 +95,28 @@ public class ThiefAI extends AI {
                 policeList.add(new myPolice(agent.getId(),agent.getNodeId()));
             if (agent.getTeamValue() == me.getTeamValue() && (agent.getType() == AIProto.AgentType.THIEF || agent.getType() == AIProto.AgentType.JOKER) && !agent.getIsDead())
                 thieveList.add(agent);
+            if (agent.getTeamValue() != me.getTeamValue() && agent.getType() == AgentType.BATMAN) {
+                phone.sendMessage(getBatmanChatMessage(agent.getNodeId()));
+            }
         }
+
+        for (int i = lastChatIndex; i < gameView.getChatBoxCount(); i++) {
+            myPolice batman = getMyPoliceBatmanFromChat(gameView.getChatBox(i).getText());
+            boolean flag = false;
+            for (myPolice police : policeList) {
+                if (police.node == batman.node) {
+                    flag = true;
+                    break;
+                }
+            }
+            if (!flag) {
+                policeList.add(batman);
+            }
+        }
+
+        lastChatIndex = gameView.getChatBoxCount();
+
+
         updateVisibleThief(gameView, policeList);
 
         //just updating till now
@@ -163,5 +186,17 @@ public class ThiefAI extends AI {
         }
         return false;
     }
+
+    private String getBatmanChatMessage(int node) {
+        String message = String.format("%" + 8 + "s",
+                Integer.toBinaryString(node)).replaceAll(" ", "0");
+        return message;
+    }
+
+    private myPolice getMyPoliceBatmanFromChat(String chat) {
+        int node = Integer.parseInt(chat, 2);
+        return new myPolice(999, node);
+    }
+
 
 }
