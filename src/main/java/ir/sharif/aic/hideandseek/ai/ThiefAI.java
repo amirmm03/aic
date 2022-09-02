@@ -100,34 +100,33 @@ public class ThiefAI extends AI {
 
 
         if (haveThiefHereWithHigherId(me, thieveList)) {
-            return me.getNodeId();
+            return findBestNodeNear(me, gameView.getBalance(), policeList, thieveList);
         }
-        return graphController.bestNodeWithMinimax(me.getNodeId(),policeList,thieveList,thievesVisibleLocations,3,myLastKnownLoc,gameView.getTurn().getTurnNumber(),gameView.getConfig().getTurnSettings().getVisibleTurnsList(),me.getId(),gameView.getBalance(),gameView.getConfig().getIncomeSettings().getThievesIncomeEachTurn());
-//        int bestNode = findBestNodeNear(me, gameView.getBalance(), policeList, thieveList);
+        return graphController.bestNodeWithMinimax(me.getNodeId(),policeList,thieveList,thievesVisibleLocations,6,myLastKnownLoc,gameView.getTurn().getTurnNumber(),gameView.getConfig().getTurnSettings().getVisibleTurnsList(),me.getId(),gameView.getBalance(),gameView.getConfig().getIncomeSettings().getThievesIncomeEachTurn());
+//        int bestNode = findBestNodeNear();
 //        return graphController.getNextOnPath(me.getNodeId(), bestNode, gameView.getBalance());
 
     }
 
-//    private int findBestNodeNear(Agent me, double myMoney, List<myPolice> policeList, List<Agent> thieveList) {
-//        int bestNode = me.getNodeId();
-//
-//        for (Path path : graphController.getAdjacent(me.getNodeId())) {
-//            int adjacent = me.getNodeId() ^ path.getFirstNodeId() ^ path.getSecondNodeId();
-//            if (graphController.getScore(bestNode, policeList, thieveList, thievesVisibleLocations) <= graphController.getScore(adjacent, policeList, thieveList, thievesVisibleLocations)
-//                    && myMoney > path.getPrice())
-//                bestNode = adjacent;
-//            if (graphController.getScore(bestNode, policeList, thieveList, thievesVisibleLocations) > 2) {
-//                for (Path path1 : graphController.getAdjacent(adjacent)) {
-//                    int adjacentAdjacent = adjacent ^ path1.getSecondNodeId() ^ path1.getFirstNodeId();
-//                    if (graphController.getScore(bestNode, policeList, thieveList, thievesVisibleLocations) < graphController.getScore(adjacentAdjacent, policeList, thieveList, thievesVisibleLocations)
-//                            && (myMoney > path.getPrice() + path1.getPrice()))
-//                        bestNode = adjacentAdjacent;
-//                }
-//            }
-//        }
-//
-//        return bestNode;
-//    }
+    private int findBestNodeNear(Agent me, double myMoney, List<myPolice> policeList, List<Agent> thieveList) {
+        int bestNode = me.getNodeId();
+
+        for (Path path : graphController.getAdjacent(me.getNodeId())) {
+            int adjacent = me.getNodeId() ^ path.getFirstNodeId() ^ path.getSecondNodeId();
+            if (graphController.getScore(bestNode, policeList, thieveList, thievesVisibleLocations) <= graphController.getScore(adjacent, policeList, thieveList, thievesVisibleLocations)
+                    && myMoney > path.getPrice())
+                bestNode = adjacent;
+            if (graphController.getScore(bestNode, policeList, thieveList, thievesVisibleLocations) > 2) {
+                for (Path path1 : graphController.getAdjacent(adjacent)) {
+                    int adjacentAdjacent = adjacent ^ path1.getSecondNodeId() ^ path1.getFirstNodeId();
+                    if (graphController.getScore(bestNode, policeList, thieveList, thievesVisibleLocations) < graphController.getScore(adjacentAdjacent, policeList, thieveList, thievesVisibleLocations)
+                            && (myMoney > path.getPrice() + path1.getPrice()))
+                        bestNode = adjacentAdjacent;
+                }
+            }
+        }
+        return graphController.getNextOnPath(me.getNodeId(),bestNode,1000000.0);
+    }
 
     private void updateVisibleThief(GameView gameView, List<myPolice> policeList) {
         Agent me = gameView.getViewer();

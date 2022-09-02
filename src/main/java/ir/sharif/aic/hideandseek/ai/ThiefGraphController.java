@@ -125,7 +125,7 @@ public class ThiefGraphController extends GraphController {
             int nextNode = path.getFirstNodeId() ^ path.getSecondNodeId() ^ myCurrentLoc;
             List<myPolice> clonedPolice = new ArrayList<>(policeList);
             //  policeMove(clonedPolice, myLastKnownLoc);
-            double tmpScore = minimax(nextNode, clonedPolice, thieveList, thievesVisibleLocations, depth - 1, myLastKnownLoc, thisturn + 2, visibleTurnsList, balance - path.getPrice() + extraMoney, extraMoney,myid);
+            double tmpScore = minimax(nextNode, clonedPolice, thieveList, thievesVisibleLocations, depth - 1, myLastKnownLoc, thisturn + 2, visibleTurnsList, balance - path.getPrice() + extraMoney, extraMoney, myid);
             if (tmpScore > bestScore) {
                 bestScore = tmpScore;
                 bestMove = nextNode;
@@ -135,7 +135,7 @@ public class ThiefGraphController extends GraphController {
         return bestMove;
     }
 
-    public double minimax(int myCurrentLoc, List<myPolice> policeList, List<AIProto.Agent> thieveList, ArrayList<Integer> thievesVisibleLocations, int depth, int myLastKnownLoc, int thisturn, List<Integer> visibleTurnsList, double balance, double extraMoney,int myId) {
+    public double minimax(int myCurrentLoc, List<myPolice> policeList, List<AIProto.Agent> thieveList, ArrayList<Integer> thievesVisibleLocations, int depth, int myLastKnownLoc, int thisturn, List<Integer> visibleTurnsList, double balance, double extraMoney, int myId) {
 
         if (depth == 0)
             return getScore(myCurrentLoc, policeList, thieveList, thievesVisibleLocations);
@@ -146,22 +146,17 @@ public class ThiefGraphController extends GraphController {
             thieveList = new ArrayList<>();
         }
         List<myPolice> clonedPolice = new ArrayList<>();
-        if (getScore(myCurrentLoc, policeList, thieveList, thievesVisibleLocations)<1)
-            return -1;
+        double thisScore = getScore(myCurrentLoc, policeList, thieveList, thievesVisibleLocations);
+        if (thisScore < 1.8)
+            return thisScore - 0.5;
         for (myPolice myPolice : policeList) {
             clonedPolice.add(new myPolice(myPolice.id, myPolice.node));
         }
         policeMove(clonedPolice, myLastKnownLoc);
         double bestScore = getScore(myCurrentLoc, clonedPolice, thieveList, thievesVisibleLocations);
 
-        if (myId == 2) {
-            for (myPolice myPolice : policeList) {
-                System.out.print(" police id : " + myPolice.id + " node: " + myPolice.node);
-            }
-            System.out.println(" i am " + myId + " turn is " + thisturn + " node is " + myCurrentLoc + " score is " + bestScore);
-        }
-        if (bestScore < 1) {
-            return -1;
+        if (bestScore < 0.9) {
+            return bestScore - 0.5;
         }
 
         for (AIProto.Path path : adjacent[myCurrentLoc]) {
@@ -169,7 +164,7 @@ public class ThiefGraphController extends GraphController {
             if (path.getPrice() > balance)
                 continue;
 
-            double tmpScore = minimax(nextNode, clonedPolice, thieveList, thievesVisibleLocations, depth - 1, myLastKnownLoc, thisturn + 2, visibleTurnsList, balance - path.getPrice() + extraMoney, extraMoney,myId);
+            double tmpScore = minimax(nextNode, clonedPolice, thieveList, thievesVisibleLocations, depth - 1, myLastKnownLoc, thisturn + 2, visibleTurnsList, balance - path.getPrice() + extraMoney, extraMoney, myId);
             if (tmpScore > bestScore) {
                 bestScore = tmpScore;
             }
@@ -179,11 +174,6 @@ public class ThiefGraphController extends GraphController {
 
     private void policeMove(List<myPolice> policeList, int myLastKnownPlace) {
         for (int i = 0; i < policeList.size(); i++) {
-
-            if (havePoliceHereWithHigherId(policeList, i)) {
-                randomMove(policeList.get(i));
-                continue;
-            }
             policeList.get(i).node = getNextOnPathWithoutIntersection(policeList.get(i), myLastKnownPlace, policeList);
         }
     }
