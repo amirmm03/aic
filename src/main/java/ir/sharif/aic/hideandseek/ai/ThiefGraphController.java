@@ -7,6 +7,8 @@ import java.util.List;
 
 public class ThiefGraphController extends GraphController {
 
+    public int graphCenter;
+
     public ThiefGraphController(AIProto.Graph graph) {
         super(graph);
     }
@@ -107,5 +109,42 @@ public class ThiefGraphController extends GraphController {
         }
         nodes.add(lastNode);
         return price;
+    }
+
+    public int findGraphCenter(AIProto.GameView gameView) {
+        List<AIProto.Node> nodes = gameView.getConfig().getGraph().getNodesList();
+
+        ArrayList<NodeMax> nodeMaxes = new ArrayList<>();
+
+        for (AIProto.Node node : nodes) {
+            int max = 0;
+            for (AIProto.Node nodee : nodes) {
+                int d = getDistance(node.getId(), nodee.getId(), 1000d);
+                max = Math.max(d, max);
+            }
+            nodeMaxes.add(new NodeMax(max, node.getId()));
+        }
+
+        int minId = 0;
+        int min = Integer.MAX_VALUE;
+
+        for (NodeMax nodeMax : nodeMaxes) {
+            if (nodeMax.max < min) {
+                min = nodeMax.max;
+                minId = nodeMax.nodeId;
+            }
+        }
+
+        return minId;
+    }
+}
+
+class NodeMax {
+    public int max;
+    public int nodeId;
+
+    public NodeMax(int max, int nodeId) {
+        this.max = max;
+        this.nodeId = nodeId;
     }
 }

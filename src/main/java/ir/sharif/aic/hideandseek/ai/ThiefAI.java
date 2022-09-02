@@ -22,6 +22,10 @@ public class ThiefAI extends AI {
     public int getStartingNode(GameView gameView) {
         graphController = new ThiefGraphController(gameView.getConfig().getGraph());
 
+        graphController.graphCenter = graphController.findGraphCenter(gameView);
+
+        System.out.println("==================" + graphController.graphCenter + "==============");
+
         int target = 2;
         double bestScore = 0;
 
