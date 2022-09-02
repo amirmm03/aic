@@ -131,7 +131,7 @@ public class PoliceAI extends AI {
 
     private boolean havePoliceHereWithHigherId(Agent me) {
         for (Agent otherPolice : OtherPolices) {
-            if (otherPolice.getNodeId() == me.getNodeId() && otherPolice.getId() > me.getId())
+            if (otherPolice.getNodeId() == me.getNodeId() && otherPolice.getId() < me.getId())
                 return true;
         }
         return false;

@@ -189,17 +189,17 @@ public class PoliceGraphController extends GraphController {
     }
 
 
-    public int distanceFromFirstIntersection(int a, int b, int dest) {
-        if (a == b)
-            return getDistance(a, dest, Double.MAX_VALUE);
-        int aDist = getDistance(a, dest, Double.MAX_VALUE);
-        int bDist = getDistance(b, dest, Double.MAX_VALUE);
-        if (aDist == bDist)
-            return distanceFromFirstIntersection(getNextOnPath(a, dest, Double.MAX_VALUE), getNextOnPath(b, dest, Double.MAX_VALUE), dest);
-        if (aDist > bDist)
-            return distanceFromFirstIntersection(getNextOnPath(a, dest, Double.MAX_VALUE), b, dest);
-        return distanceFromFirstIntersection(a, getNextOnPath(b, dest, Double.MAX_VALUE), dest);
-    }
+//    public int distanceFromFirstIntersection(int a, int b, int dest) {
+//        if (a == b)
+//            return getDistance(a, dest, Double.MAX_VALUE);
+//        int aDist = getDistance(a, dest, Double.MAX_VALUE);
+//        int bDist = getDistance(b, dest, Double.MAX_VALUE);
+//        if (aDist == bDist)
+//            return distanceFromFirstIntersection(getNextOnPath(a, dest, Double.MAX_VALUE), getNextOnPath(b, dest, Double.MAX_VALUE), dest);
+//        if (aDist > bDist)
+//            return distanceFromFirstIntersection(getNextOnPath(a, dest, Double.MAX_VALUE), b, dest);
+//        return distanceFromFirstIntersection(a, getNextOnPath(b, dest, Double.MAX_VALUE), dest);
+//    }
 
 
     public int getNextNodeWithMinimax(int policeID, int depth,
