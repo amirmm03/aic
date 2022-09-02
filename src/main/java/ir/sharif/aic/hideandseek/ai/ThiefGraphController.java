@@ -49,6 +49,10 @@ public class ThiefGraphController extends GraphController {
 
         output += (double) getAdjacent(nodeId).size() / 4;
 
+        output += Math.max(0, 50 - getDistance(nodeId, graphCenter, Double.MAX_VALUE));
+
+        output += adjacent[nodeId].size() * 10;
+
 //        for (AIProto.Path path : adjacentPath) {
 //            int adjacent = nodeId ^ path.getFirstNodeId() ^ path.getSecondNodeId();
 //            if (thievesVisibleLocations.contain(adjacent) )
